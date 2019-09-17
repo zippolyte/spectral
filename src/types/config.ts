@@ -16,3 +16,10 @@ export interface ILintConfig {
   verbose?: boolean;
   quiet?: boolean;
 }
+
+export interface IServeConfig {
+  ruleset?: string[];
+  skipRule?: string[];
+  verbose?: boolean;
+  quiet?: boolean;
+}

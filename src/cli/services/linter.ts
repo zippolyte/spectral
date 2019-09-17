@@ -91,7 +91,7 @@ export async function lint(name: string, flags: ILintConfig, rulesetFile: Option
   });
 }
 
-const skipRules = (rules: RuleCollection, flags: ILintConfig): RuleCollection => {
+export const skipRules = (rules: RuleCollection, flags: ILintConfig): RuleCollection => {
   const skippedRules: string[] = [];
   const invalidRules: string[] = [];
 

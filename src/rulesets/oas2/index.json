@@ -137,6 +137,7 @@
       "description": "OpenAPI v3 keyword `anyOf` detected in OpenAPI v2 document.",
       "message": "anyOf is not available in OpenAPI v2, it was added in OpenAPI v3",
       "recommended": true,
+      "severity": 0,
       "type": "validation",
       "given": "$..[?(@.anyOf)]",
       "then": {
@@ -151,6 +152,7 @@
       "description": "OpenAPI v3 keyword `oneOf` detected in OpenAPI v2 document.",
       "message": "oneOf is not available in OpenAPI v2, it was added in OpenAPI v3",
       "recommended": true,
+      "severity": 0,
       "type": "validation",
       "given": "$..[?(@.oneOf)]",
       "then": {
