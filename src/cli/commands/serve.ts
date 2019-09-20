@@ -1,7 +1,6 @@
 import * as express from 'express';
 import * as morgan from 'morgan';
 import { CommandModule, showHelp } from 'yargs';
-import { version } from '../../../package.json';
 
 import { ILintConfig } from '../../types/config';
 import { initialize } from '../services/server';
@@ -53,7 +52,7 @@ const serveCommand: CommandModule = {
     return initialize({ ...config }, ruleset).then(spectral => {
       const app = express();
       app.use((req: express.Request, res: express.Response, next: () => void) => {
-        res.setHeader('Server', `Spectral/${version}`);
+        res.setHeader('Server', `Spectral`);
         res.removeHeader('X-Powered-By');
         next();
       });
@@ -68,7 +67,7 @@ const serveCommand: CommandModule = {
       });
 
       app.listen(args.port, () => {
-        console.log(`Spectral ${version} HTTP server running on port: ${args.port}`);
+        console.log(`Spectral HTTP server running on port: ${args.port}`);
       });
     });
   },
