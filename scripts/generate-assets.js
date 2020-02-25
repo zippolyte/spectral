@@ -13,7 +13,7 @@ const path = require('@stoplight/path');
 const fs = require('fs');
 const { promisify } = require('util');
 const { parse } = require('@stoplight/yaml');
-const { httpAndFileResolver } = require('../dist/resolvers/http-and-file');
+const $RefParser = require('json-schema-ref-parser');
 
 const readFileAsync = promisify(fs.readFile);
 const writeFileAsync = promisify(fs.writeFile);
@@ -44,15 +44,7 @@ async function processDirectory(assets, dir) {
     } else {
       let content = await readFileAsync(target, 'utf8');
       if (path.extname(name) === '.json') {
-        content = JSON.stringify((await httpAndFileResolver.resolve(JSON.parse(content), {
-          dereferenceRemote: true,
-          dereferenceInline: false,
-          baseUri: target,
-          parseResolveResult(opts) {
-            opts.result = parse(opts.result);
-            return opts;
-          },
-        })).result);
+        content = JSON.stringify(await $RefParser.bundle(target, JSON.parse(content), {}));
       }
 
       assets[path.join('@stoplight/spectral', path.relative(path.join(__dirname, '..'), target))] = content;

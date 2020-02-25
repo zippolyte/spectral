@@ -1,6 +1,5 @@
 import { safeStringify } from '@stoplight/json';
-import { Resolver } from '@stoplight/json-ref-resolver';
-import { DiagnosticSeverity, Dictionary } from '@stoplight/types';
+import { DiagnosticSeverity, Dictionary, Optional } from '@stoplight/types';
 import { YamlParserResult } from '@stoplight/yaml';
 import { memoize, merge } from 'lodash';
 
@@ -35,7 +34,7 @@ memoize.Cache = WeakMap;
 export * from './types';
 
 export class Spectral {
-  private readonly _resolver: IResolver;
+  private readonly _resolver: Optional<IResolver>;
 
   public functions: FunctionCollection = { ...defaultFunctions };
   public rules: RunRuleCollection = {};
@@ -45,7 +44,7 @@ export class Spectral {
 
   constructor(opts?: IConstructorOpts) {
     this._computeFingerprint = memoize(opts?.computeFingerprint || defaultComputeResultFingerprint);
-    this._resolver = opts?.resolver || new Resolver();
+    this._resolver = opts?.resolver;
     this.formats = {};
   }
 

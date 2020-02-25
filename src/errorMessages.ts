@@ -1,5 +1,6 @@
-import { IResolveError } from '@stoplight/json-ref-resolver/types';
-import { DiagnosticSeverity, IDiagnostic, JsonPath, Segment } from '@stoplight/types';
+import { IDiagnostic, JsonPath, Segment } from '@stoplight/types';
+import { DiagnosticSeverity } from '@stoplight/types/dist';
+import * as $RefParser from 'json-schema-ref-parser';
 import { uniqBy } from 'lodash';
 import { Document, IDocument } from './document';
 import { IRuleResult } from './types';
@@ -23,8 +24,6 @@ export function getDiagnosticErrorMessage(diagnostic: IDiagnostic) {
   return prettifiedMessage;
 }
 
-export const prettyPrintResolverErrorMessage = (message: string) => message.replace(/^Error\s*:\s*/, '');
-
 const getPropertyKey = (path: JsonPath | undefined): Segment | void => {
   if (path !== undefined && path.length > 0) {
     return path[path.length - 1];
@@ -41,16 +40,16 @@ export function formatParserDiagnostics(diagnostics: ReadonlyArray<IDiagnostic>,
   }));
 }
 
-export const formatResolverErrors = (document: IDocument, diagnostics: IResolveError[]): IRuleResult[] => {
+export const formatResolverErrors = (document: IDocument, diagnostics: $RefParser['errors']): IRuleResult[] => {
   return uniqBy(diagnostics, 'message').map<IRuleResult>(error => {
     const path = [...error.path, '$ref'];
     const range = document.getRangeForJsonPath(path, true) || Document.DEFAULT_RANGE;
-    const source = error.uriStack.length > 0 ? error.uriStack[error.uriStack.length - 1] : document.source;
+    const source = error.source;
 
     return {
       code: 'invalid-ref',
       path,
-      message: prettyPrintResolverErrorMessage(error.message),
+      message: error.message,
       severity: DiagnosticSeverity.Error,
       range,
       ...(source !== null && { source }),

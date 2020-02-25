@@ -1,9 +1,7 @@
-import { extractSourceFromRef, hasRef, isLocalRef } from '@stoplight/json';
-import { Resolver } from '@stoplight/json-ref-resolver';
-import { ICache, IGraphNodeData, IUriParser } from '@stoplight/json-ref-resolver/types';
-import { extname, resolve } from '@stoplight/path';
-import { Dictionary, IParserResult, JsonPath } from '@stoplight/types';
-import { DepGraph } from 'dependency-graph';
+import { extractPointerFromRef, extractSourceFromRef, hasRef, isLocalRef } from '@stoplight/json';
+import { resolve } from '@stoplight/path';
+import { Dictionary, IParserResult, JsonPath, Optional } from '@stoplight/types';
+import * as $RefParser from 'json-schema-ref-parser';
 import { get } from 'lodash';
 import { Document, IDocument } from './document';
 
@@ -13,6 +11,9 @@ import { IParser } from './parsers/types';
 import { IResolver, IRuleResult } from './types';
 import { getClosestJsonPath, getEndRef, isAbsoluteRef, safePointerToPath, traverseObjUntilRef } from './utils';
 
+const yamlDefaultParser = require('json-schema-ref-parser/lib/parsers/yaml');
+const jsonDefaultParser = require('json-schema-ref-parser/lib/parsers/json');
+
 export type DocumentInventoryItem = {
   document: IDocument;
   path: JsonPath;
@@ -20,12 +21,13 @@ export type DocumentInventoryItem = {
 };
 
 export class DocumentInventory {
-  private static readonly _cachedRemoteDocuments = new WeakMap<ICache | IResolver, Dictionary<Document>>();
+  private static readonly _cachedRemoteDocuments = new WeakMap<IResolver, Dictionary<Document>>();
 
-  public graph!: DepGraph<IGraphNodeData>;
   public resolved: unknown;
   public errors!: IRuleResult[];
   public diagnostics: IRuleResult[] = [];
+
+  protected readonly refParser: $RefParser;
 
   public readonly referencedDocuments: Dictionary<Document>;
 
@@ -41,9 +43,11 @@ export class DocumentInventory {
     return this.document.formats;
   }
 
-  constructor(public readonly document: IDocument<unknown>, protected resolver: IResolver) {
-    const cacheKey = resolver instanceof Resolver ? resolver.uriCache : resolver;
+  constructor(public readonly document: IDocument<unknown>, protected resolver: Optional<IResolver>) {
+    const cacheKey = resolver || ({} as any);
     const cachedDocuments = DocumentInventory._cachedRemoteDocuments.get(cacheKey);
+    this.refParser = new $RefParser();
+
     if (cachedDocuments) {
       this.referencedDocuments = cachedDocuments;
     } else {
@@ -52,15 +56,26 @@ export class DocumentInventory {
     }
   }
 
+  public hasNode(path: string) {
+    const ref = extractPointerFromRef(path);
+    if (ref === null) {
+      return this.refParser.$refs.exists(path);
+    }
+
+    // @ts-ignore
+    return !!this.refParser.$refs._resolve(path)?.$ref?.paths.includes(ref);
+  }
+
   public async resolve() {
-    const resolveResult = await this.resolver.resolve(this.document.data, {
-      ...(this.document.source !== null && { baseUri: this.document.source }),
-      parseResolveResult: this.parseResolveResult,
+    this.resolved = await this.refParser.dereference(this.document.source || '', Object(this.document.data), {
+      failFast: false,
+      parse: {
+        yaml: this.wrapParser(yamlDefaultParser),
+        json: this.wrapParser(jsonDefaultParser),
+      },
     });
 
-    this.graph = resolveResult.graph;
-    this.resolved = resolveResult.result;
-    this.errors = formatResolverErrors(this.document, resolveResult.errors);
+    this.errors = formatResolverErrors(this.document, this.refParser.errors);
   }
 
   public findAssociatedItemForPath(path: JsonPath, resolved: boolean): DocumentInventoryItem | null {
@@ -94,17 +109,18 @@ export class DocumentInventory {
       while (true) {
         if (source === null) return null;
 
-        $ref = getEndRef(this.graph.getNodeData(source).refMap, $ref);
+        console.log(this.refParser.$refs.paths(source));
+        getEndRef(this.refParser.$refs.paths(source) as any, $ref);
 
         if ($ref === null) return null;
 
-        const scopedPath = [...safePointerToPath($ref), ...newPath];
+        const scopedPath: JsonPath = [...safePointerToPath($ref), ...newPath];
         let resolvedDoc;
 
         if (isLocalRef($ref)) {
           resolvedDoc = source === this.document.source ? this.document : this.referencedDocuments[source];
         } else {
-          const extractedSource = extractSourceFromRef($ref)!;
+          const extractedSource: string = extractSourceFromRef($ref)!;
           source = isAbsoluteRef(extractedSource) ? extractedSource : resolve(source, '..', extractedSource);
 
           resolvedDoc = source === this.document.source ? this.document : this.referencedDocuments[source];
@@ -129,21 +145,25 @@ export class DocumentInventory {
     }
   }
 
-  protected parseResolveResult = async (resolveOpts: IUriParser) => {
-    const source = resolveOpts.targetAuthority.href().replace(/\/$/, '');
-    const ext = extname(source);
+  protected wrapParser(parserOptions: $RefParser.ParserOptions) {
+    return {
+      ...parserOptions,
+      read: (file: $RefParser.FileInfo) => {
+        console.log('ca;led');
+        const { url: source, extension: ext } = file;
 
-    const content = String(resolveOpts.result);
-    const parser: IParser<IParserResult<unknown, any, any, any>> = ext === '.json' ? Parsers.Json : Parsers.Yaml;
-    const document = new Document(content, parser, source);
+        const content = String(file.data);
+        const parser: IParser<IParserResult<unknown, any, any, any>> = ext === '.json' ? Parsers.Json : Parsers.Yaml;
+        const document = new Document(content, parser, source);
 
-    resolveOpts.result = document.data;
-    if (document.diagnostics.length > 0) {
-      this.diagnostics.push(...formatParserDiagnostics(document.diagnostics, document.source));
-    }
+        if (document.diagnostics.length > 0) {
+          this.diagnostics.push(...formatParserDiagnostics(document.diagnostics, document.source));
+        }
 
-    this.referencedDocuments[source] = document;
+        this.referencedDocuments[source] = document;
 
-    return resolveOpts;
-  };
+        return document.data;
+      },
+    };
+  }
 }

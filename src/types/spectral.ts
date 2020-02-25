@@ -1,6 +1,6 @@
-import { IResolveOpts, IResolveResult } from '@stoplight/json-ref-resolver/types';
 import { DiagnosticSeverity, Dictionary, IDiagnostic, JsonPath } from '@stoplight/types';
 import { JSONSchema4, JSONSchema6, JSONSchema7 } from 'json-schema';
+import * as $RefParser from 'json-schema-ref-parser';
 import { IFunction, IRule, Rule } from '.';
 import { ComputeFingerprintFunc } from '../utils';
 
@@ -49,10 +49,10 @@ export interface IGivenNode {
   value: any;
 }
 
-export type ResolveResult = Omit<IResolveResult, 'runner'>;
+export type ResolveResult = $RefParser;
 
 export interface IResolver {
-  resolve(source: unknown, opts?: IResolveOpts): Promise<ResolveResult>;
+  resolve(src: string, content: Dictionary<unknown>, opts: $RefParser.Options): Promise<ResolveResult>;
 }
 
 export type FormatLookup = (document: unknown) => boolean;

@@ -1,7 +1,6 @@
 import { normalize } from '@stoplight/path';
 import { DiagnosticSeverity } from '@stoplight/types';
 import * as path from 'path';
-import { httpAndFileResolver } from '../resolvers/http-and-file';
 import { Spectral } from '../spectral';
 
 const customFunctionOASRuleset = path.join(__dirname, './__fixtures__/custom-functions-oas-ruleset.json');
@@ -76,7 +75,7 @@ describe('Linter', () => {
   });
 
   it('should report resolving errors for correct files', async () => {
-    spectral = new Spectral({ resolver: httpAndFileResolver });
+    spectral = new Spectral();
 
     const documentUri = path.join(__dirname, './__fixtures__/schemas/doc.json');
     const result = await spectral.run(
@@ -111,7 +110,7 @@ describe('Linter', () => {
 
   describe('evaluate "value" in validation messages', () => {
     test('should print correct values for referenced files', async () => {
-      spectral = new Spectral({ resolver: httpAndFileResolver });
+      spectral = new Spectral();
 
       spectral.setRules({
         'empty-is-falsy': {

@@ -1,5 +1,4 @@
 import { join, relative } from '@stoplight/path';
-import { httpAndFileResolver } from '../../../../../resolvers/http-and-file';
 import { getResolver } from '../getResolver';
 
 const customResolver = require('./__fixtures__/resolver');
@@ -21,6 +20,6 @@ describe('getResolver', () => {
   });
 
   it('given no path, returns default resolver', () => {
-    expect(getResolver(void 0)).toBe(httpAndFileResolver);
+    expect(getResolver(void 0)).toBe(null);
   });
 });

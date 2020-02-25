@@ -1,7 +1,6 @@
 import * as http from 'http';
 import * as url from 'url';
 import { DEFAULT_REQUEST_OPTIONS } from '../request';
-import { httpAndFileResolver } from '../resolvers/http-and-file';
 import { Spectral } from '../spectral';
 const ProxyAgent = require('proxy-agent');
 
@@ -68,7 +67,7 @@ describe('request', () => {
           },
         };
 
-        const s = new Spectral({ resolver: httpAndFileResolver });
+        const s = new Spectral();
 
         return expect(s.runWithResolved(doc)).resolves.toHaveProperty('resolved', {
           info: {

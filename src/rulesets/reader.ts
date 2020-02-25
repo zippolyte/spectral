@@ -1,10 +1,8 @@
-import { Cache } from '@stoplight/json-ref-resolver';
-import { ICache } from '@stoplight/json-ref-resolver/types';
 import { join } from '@stoplight/path';
 import { Optional } from '@stoplight/types';
 import { parse } from '@stoplight/yaml';
+import $RefParser = require('json-schema-ref-parser');
 import { readFile, readParsable } from '../fs/reader';
-import { httpAndFileResolver } from '../resolvers/http-and-file';
 import { FileRulesetSeverity, IRuleset, RulesetFunctionCollection } from '../types/ruleset';
 import { findFile } from './finder';
 import { mergeFormats, mergeFunctions, mergeRules } from './mergers';
@@ -21,7 +19,7 @@ export async function readRuleset(uris: string | string[], opts?: IRulesetReadOp
   };
 
   const processedRulesets = new Set<string>();
-  const processRuleset = createRulesetProcessor(processedRulesets, new Cache(), opts);
+  const processRuleset = createRulesetProcessor(processedRulesets, opts);
 
   for (const uri of Array.isArray(uris) ? new Set([...uris]) : [uris]) {
     processedRulesets.clear(); // makes sure each separate ruleset starts with clear list
@@ -34,11 +32,7 @@ export async function readRuleset(uris: string | string[], opts?: IRulesetReadOp
   return base;
 }
 
-const createRulesetProcessor = (
-  processedRulesets: Set<string>,
-  uriCache: ICache,
-  readOpts: Optional<IRulesetReadOptions>,
-) => {
+const createRulesetProcessor = (processedRulesets: Set<string>, readOpts: Optional<IRulesetReadOptions>) => {
   return async function processRuleset(
     baseUri: string,
     uri: string,
@@ -50,26 +44,15 @@ const createRulesetProcessor = (
     }
 
     processedRulesets.add(rulesetUri);
-    const { result } = await httpAndFileResolver.resolve(
+    const result = await $RefParser.bundle(
+      rulesetUri,
       parse(
         await readParsable(rulesetUri, {
           timeout: readOpts && readOpts.timeout,
           encoding: 'utf8',
         }),
       ),
-      {
-        baseUri: rulesetUri,
-        dereferenceInline: false,
-        uriCache,
-        async parseResolveResult(opts) {
-          try {
-            opts.result = parse(opts.result);
-          } catch {
-            // happens
-          }
-          return opts;
-        },
-      },
+      {},
     );
     const ruleset = assertValidRuleset(JSON.parse(JSON.stringify(result)));
     const rules = {};

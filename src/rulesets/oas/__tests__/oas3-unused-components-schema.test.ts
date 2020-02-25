@@ -3,11 +3,10 @@ import { Document } from '../../../document';
 import { unreferencedReusableObject } from '../../../functions/unreferencedReusableObject';
 import { RuleType, Spectral } from '../../../index';
 import * as Parsers from '../../../parsers';
-import { httpAndFileResolver } from '../../../resolvers/http-and-file';
 import { rules } from '../index.json';
 
 describe('unusedComponentsSchema - Local references', () => {
-  const s = new Spectral({ resolver: httpAndFileResolver });
+  const s = new Spectral();
   s.registerFormat('oas3', () => true);
   s.setFunctions({ unreferencedReusableObject });
   s.setRules({

@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "packages": {
+    "json-schema-ref-parser": {
+      "signature": "8c31a40ef837c76e9ebfe2d3eb0dd726",
+      "file": true,
+      "replaced": "^7.1.3"
+    }
+  }
+}
