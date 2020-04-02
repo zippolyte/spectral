@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
   stoplight: stoplight/cli@0.0.2
+  windows: circleci/windows@2.4.0
   node: circleci/node@3.0.0
 
 executors:
@@ -58,6 +59,15 @@ commands:
           name: Run harness tests
           command: yarn test.harness
 
+  prepare-release:
+    steps:
+      - checkout
+      - cached-dependencies
+      - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+      - run: npm version from-git
+      - run: yarn inline-version
+      - run: yarn build
+
 jobs:
   test:
     parameters:
@@ -89,16 +99,31 @@ jobs:
           name: Run browser tests (nimma)
           command: USE_NIMMA=true yarn test.karma
 
+  test-windows:
+    executor:
+      name: windows/default
+    steps:
+      - checkout
+      - install-and-build
+      - test-node
+      - test-harness
+
+  build-windows-binary:
+    executor:
+      name: windows/default
+    steps:
+      - prepare-release
+      - run: npx pkg . --targets windows --out-path ./binaries
+      - persist_to_workspace:
+          root: ./
+          paths:
+            - binaries
+
   release:
     docker:
       - image: circleci/node:12
     steps:
-      - checkout
-      - cached-dependencies
-      - run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-      - run: npm version from-git
-      - run: yarn inline-version
-      - run: yarn build
+      - prepare-release
       - run: |
           if [[ "$CIRCLE_TAG" == *beta* ]] ; then
             npm publish --tag beta
@@ -138,6 +163,7 @@ workflows:
                 - "10.18"
                 - "12.9"
                 - "14.9"
+      - test-windows
       - test-browser
 
   release:
