@@ -5,11 +5,40 @@ import { STDIN } from './document';
 import { DocumentInventory } from './documentInventory';
 import { lintNode } from './linter';
 import { getDiagnosticSeverity } from './rulesets/severity';
-import { FunctionCollection, IGivenNode, IRule, IRuleResult, IRunRule, RunRuleCollection } from './types';
+import { FunctionCollection, IRule, IRuleResult, IRunRule, RunRuleCollection } from './types';
 import { RulesetExceptionCollection } from './types/ruleset';
 import { hasIntersectingElement } from './utils/';
 import { generateDocumentWideResult } from './utils/generateDocumentWideResult';
-import { IExceptionLocation, pivotExceptions } from './utils/pivotExceptions';
+// import { pivotExceptions } from './utils/pivotExceptions';
+// import { IExceptionLocation } from './utils/pivotExceptions';
+
+// const arePathsEqual = (one: JsonPath, another: JsonPath): boolean => {
+//   if (one.length !== another.length) {
+//     return false;
+//   }
+//
+//   for (let i = 0; i < one.length; i++) {
+//     if (one[i] !== another[i]) {
+//       return false;
+//     }
+//   }
+//
+//   return true;
+// };
+//
+// const isAKnownException = (violation: IRuleResult, locations: IExceptionLocation[]): boolean => {
+//   for (const location of locations) {
+//     if (violation.source !== location.source) {
+//       continue;
+//     }
+//
+//     if (arePathsEqual(violation.path, location.path)) {
+//       return true;
+//     }
+//   }
+//
+//   return false;
+// };
 
 export const isRuleEnabled = (rule: IRule) => rule.severity !== void 0 && getDiagnosticSeverity(rule.severity) !== -1;
 
@@ -26,27 +55,26 @@ const generateDefinedExceptionsButStdIn = (documentInventory: DocumentInventory)
   );
 };
 
-export const runRules = async (
-  documentInventory: DocumentInventory,
-  rules: RunRuleCollection,
-  functions: FunctionCollection,
-  exceptions: RulesetExceptionCollection,
-): Promise<IRuleResult[]> => {
-  const results: IRuleResult[] = [];
+export interface IRunningContext {
+  documentInventory: DocumentInventory;
+  rules: RunRuleCollection;
+  functions: FunctionCollection;
+  exceptions: RulesetExceptionCollection;
+}
+
+export const runRules = async (context: IRunningContext): Promise<IRuleResult[]> => {
+  const { documentInventory, rules, exceptions } = context;
+
+  const results: Array<Promise<Array<void | IRuleResult[]>>> = [];
 
   const isStdIn = isStdInSource(documentInventory);
 
   if (isStdIn && Object.keys(exceptions).length > 0) {
-    results.push(generateDefinedExceptionsButStdIn(documentInventory));
+    void generateDefinedExceptionsButStdIn(documentInventory);
   }
 
-  const exceptRuleByLocations = isStdIn ? {} : pivotExceptions(exceptions, rules);
-
-  for (const name in rules) {
-    if (!rules.hasOwnProperty(name)) continue;
-
-    const rule = rules[name];
-    if (!rule) continue;
+  for (const rule of Object.values(rules)) {
+    if (!isRuleEnabled(rule)) continue;
 
     if (
       rule.formats !== void 0 &&
@@ -56,50 +84,38 @@ export const runRules = async (
       continue;
     }
 
-    if (!isRuleEnabled(rule)) {
-      continue;
-    }
-
-    let ruleResults: IRuleResult[] = [];
-
-    try {
-      ruleResults = await runRule(documentInventory, rule, functions, exceptRuleByLocations[name]);
-    } catch (e) {
-      console.error(`Unable to run rule '${name}':\n${e}`);
-    }
-
-    results.push(...ruleResults);
+    runRule(context, rule, results);
   }
 
-  return results;
+  return (await Promise.allSettled(results))
+    .flatMap(result => {
+      if (result.status === 'fulfilled') {
+        return result.value.filter(Boolean);
+      }
+
+      return null;
+    })
+    .flat();
 };
 
-const runRule = async (
-  resolved: DocumentInventory,
+const runRule = (
+  context: IRunningContext,
   rule: IRunRule,
-  functions: FunctionCollection,
-  exceptionLocations: IExceptionLocation[] | undefined,
-): Promise<IRuleResult[]> => {
-  const target = rule.resolved === false ? resolved.unresolved : resolved.resolved;
-
-  const results: IRuleResult[] = [];
-  const promises: Array<Promise<void>> = [];
+  results: Array<Promise<Array<void | IRuleResult[]>>>,
+): void => {
+  const target = rule.resolved === false ? context.documentInventory.unresolved : context.documentInventory.resolved;
 
   for (const given of Array.isArray(rule.given) ? rule.given : [rule.given]) {
     // don't have to spend time running jsonpath if given is $ - can just use the root object
     if (given === '$') {
-      promises.push(
-        lint(
-          {
-            path: ['$'],
-            value: target,
-          },
-          resolved,
-          rule,
-          functions,
-          exceptionLocations,
-          results,
-        ),
+      void lintNode(
+        context,
+        {
+          path: ['$'],
+          value: target,
+        },
+        rule,
+        results,
       );
     } else {
       JSONPath({
@@ -107,51 +123,17 @@ const runRule = async (
         json: target,
         resultType: 'all',
         callback: (result: any) => {
-          promises.push(
-            lint(
-              {
-                path: JSONPath.toPathArray(result.path),
-                value: result.value,
-              },
-              resolved,
-              rule,
-              functions,
-              exceptionLocations,
-              results,
-            ),
+          void lintNode(
+            context,
+            {
+              path: JSONPath.toPathArray(result.path),
+              value: result.value,
+            },
+            rule,
+            results,
           );
         },
       });
     }
   }
-
-  await Promise.all(promises);
-  return results;
 };
-
-async function lint(
-  node: IGivenNode,
-  resolved: DocumentInventory,
-  rule: IRunRule,
-  functions: FunctionCollection,
-  exceptionLocations: IExceptionLocation[] | undefined,
-  results: IRuleResult[],
-): Promise<void> {
-  try {
-    for (const then of Array.isArray(rule.then) ? rule.then : [rule.then]) {
-      const func = functions[then.function];
-      if (!func) {
-        console.warn(`Function ${then.function} not found. Called by rule ${rule.name}.`);
-        continue;
-      }
-
-      const validationResults = await lintNode(node, rule, then, func, resolved, exceptionLocations);
-
-      if (validationResults.length > 0) {
-        results.push(...validationResults);
-      }
-    }
-  } catch (e) {
-    console.warn(`Encountered error when running rule '${rule.name}' on node at path '${node.path}':\n${e}`);
-  }
-}
