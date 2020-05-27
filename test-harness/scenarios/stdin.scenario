@@ -6,7 +6,7 @@ info:
   version: 1.0.0
   title: Stoplight
 paths: {}
-====command====
+====command-nix====
 cat {document} | {bin} lint
 ====stdout====
 OpenAPI 3.x detected

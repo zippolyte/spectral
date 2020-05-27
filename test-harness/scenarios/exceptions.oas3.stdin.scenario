@@ -14,7 +14,7 @@ except:
     - oas3-api-servers
   "{document}#/info":
     - info-contact
-====command====
+====command-nix====
 cat {document} | {bin} lint -r {asset:ruleset}
 ====stdout====
 OpenAPI 3.x detected
