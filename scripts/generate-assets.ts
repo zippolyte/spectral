@@ -26,7 +26,7 @@ if (!fs.existsSync(baseDir)) {
 
 const generatedAssets = {};
 
-(async () => {
+void (async (): Promise<void> => {
   for (const kind of ['oas', 'asyncapi']) {
     const assets = await processDirectory(path.join(__dirname, `../rulesets/${kind}`));
     Object.assign(generatedAssets, assets);
@@ -47,7 +47,7 @@ async function _processDirectory(assets: Record<string, string>, dir: string): P
       } else {
         let content = await readFileAsync(target, 'utf8');
         if (path.extname(name) === '.json') {
-          content = JSON.stringify(await $RefParser.bundle(target, JSON.parse(content), {}))
+          content = JSON.stringify(await $RefParser.bundle(target, JSON.parse(content), {}));
         }
 
         assets[path.join('@stoplight/spectral', path.relative(path.join(__dirname, '..'), target))] = content;

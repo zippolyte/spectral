@@ -1,6 +1,6 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["src", "test-harness"],
+  "include": ["src", "test-harness", "scripts", "./*.ts"],
   "exclude": ["node_modules"],
   "compilerOptions": {
     "outDir": "dist"
