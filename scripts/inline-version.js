@@ -25,11 +25,8 @@ for (const node of body) {
             b.callExpression(b.identifier('String'), [b.identifier(node.params[0].name)]),
             b.identifier('replace'),
           ),
-          [
-            b.stringLiteral(pkg.name),
-            b.stringLiteral(`${pkg.name}@${pkg.version}`),
-          ]
-        )
+          [b.stringLiteral(pkg.name), b.stringLiteral(`${pkg.name}@${pkg.version}`)],
+        ),
       ),
     ];
   }

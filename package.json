@@ -43,7 +43,7 @@
     "inline-version": "node ./scripts/inline-version.js",
     "prelint": "tsc --noEmit",
     "lint.fix": "yarn lint --fix",
-    "lint": "eslint --cache --cache-location .cache/ src/**/*.{ts,js} test-harness/**/*.{ts,js}",
+    "lint": "eslint --cache --cache-location .cache/ {scripts,src,test-harness}/**/*.{js,ts}",
     "copy.html-templates": "copyfiles -u 1 \"./src/formatters/html/*.html\" \"./dist/\"",
     "postbuild.functions": "copyfiles -u 1 \"dist/rulesets/{oas,asyncapi}/functions/*.js\" ./",
     "postbuild": "yarn build.functions && yarn generate-assets",

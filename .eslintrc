@@ -52,6 +52,24 @@
   "overrides": [
     {
       "files": [
+        "scripts/**/*.{ts,js}"
+      ],
+      "env": {
+        "node": true
+      }
+    },
+
+    {
+      "files": [
+        "scripts/**/*.js"
+      ],
+      "rules": {
+        "@typescript-eslint/no-var-requires": "off"
+      }
+    },
+
+    {
+      "files": [
         "src/rulesets/*/functions/**/*.ts"
       ],
       "rules": {
