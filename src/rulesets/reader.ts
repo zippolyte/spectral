@@ -1,14 +1,15 @@
-import { Cache } from '@stoplight/json-ref-resolver';
-import { ICache } from '@stoplight/json-ref-resolver/types';
-import { extname, join } from '@stoplight/path';
+import { join, extname } from '@stoplight/path';
 import { Optional } from '@stoplight/types';
 import { parse } from '@stoplight/yaml';
 import { readFile, readParsable } from '../fs/reader';
-import { createHttpAndFileResolver, IHttpAndFileResolverOptions } from '../resolvers/http-and-file';
+import type { IHttpAndFileResolverOptions } from '../resolvers/http-and-file';
 import { FileRulesetSeverity, IRuleset, RulesetFunctionCollection } from '../types/ruleset';
 import { findFile, isNPMSource } from './finder';
 import { mergeFormats, mergeFunctions, mergeRules } from './mergers';
 import { mergeExceptions } from './mergers/exceptions';
+// @ts-ignore
+import generate, { Dependencies, ModuleRegistry } from 'json-ref-escodegen';
+import * as path from '@stoplight/path';
 import { assertValidRuleset } from './validation';
 
 export interface IRulesetReadOptions extends IHttpAndFileResolverOptions {
@@ -31,7 +32,7 @@ export async function readRuleset(uris: string | string[], opts?: IRulesetReadOp
   };
 
   const processedRulesets = new Set<string>();
-  const processRuleset = createRulesetProcessor(processedRulesets, new Cache(), opts);
+  const processRuleset = createRulesetProcessor(processedRulesets, opts);
 
   for (const uri of Array.isArray(uris) ? new Set([...uris]) : [uris]) {
     processedRulesets.clear(); // makes sure each separate ruleset starts with clear list
@@ -45,11 +46,7 @@ export async function readRuleset(uris: string | string[], opts?: IRulesetReadOp
   return base;
 }
 
-const createRulesetProcessor = (
-  processedRulesets: Set<string>,
-  uriCache: ICache,
-  readOpts: Optional<IRulesetReadOptions>,
-) => {
+const createRulesetProcessor = (processedRulesets: Set<string>, readOpts: Optional<IRulesetReadOptions>) => {
   return async function processRuleset(
     baseUri: string,
     uri: string,
@@ -60,28 +57,32 @@ const createRulesetProcessor = (
       return null;
     }
 
+    const output = {};
     processedRulesets.add(rulesetUri);
-    const { result } = await createHttpAndFileResolver({ agent: readOpts?.agent }).resolve(
-      parseContent(
-        await readParsable(rulesetUri, {
-          timeout: readOpts?.timeout,
-          encoding: 'utf8',
-          agent: readOpts?.agent,
-        }),
-        rulesetUri,
-      ),
-      {
-        baseUri: rulesetUri,
-        dereferenceInline: false,
-        uriCache,
-        async parseResolveResult(opts) {
-          opts.result = parseContent(opts.result, opts.targetAuthority.pathname());
-          return opts;
+    const { id } = await generate(rulesetUri, {
+      module: 'cjs',
+      fs: {
+        // @ts-ignore
+        read: async src =>
+          parseContent(
+            await readParsable(src, {
+              timeout: readOpts?.timeout,
+              encoding: 'utf8',
+              agent: readOpts?.agent,
+            }),
+            src,
+          ),
+        // @ts-ignore
+        write: (target, content): void => {
+          output[target] = content;
         },
       },
-    );
+      path,
+      dependencies: new Dependencies(),
+      moduleRegistry: new ModuleRegistry(),
+    });
 
-    const ruleset = assertValidRuleset(JSON.parse(JSON.stringify(result)));
+    const ruleset = assertValidRuleset(createFakeRequire(output)(`./${id}.js`));
     const rules = {};
     const functions = {};
     const exceptions = {};
@@ -163,3 +164,27 @@ const createRulesetProcessor = (
     return newRuleset;
   };
 };
+
+function createFakeRequire(availableModules: any) {
+  const evaluatedModules = {};
+
+  return function require(path: string) {
+    if (path in evaluatedModules) {
+      return evaluatedModules[path];
+    } else if (path in availableModules) {
+      const module = {
+        get exports() {
+          return evaluatedModules[path];
+        },
+        set exports(val) {
+          evaluatedModules[path] = val;
+        },
+      };
+
+      Function('require, module', availableModules[path])(require, module);
+      return evaluatedModules[path];
+    } else {
+      throw new Error(`${path} does not exist`);
+    }
+  };
+}
