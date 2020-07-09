@@ -4555,10 +4555,8 @@ json-parse-better-errors@^1.0.1:
   resolved "https://registry.yarnpkg.com/json-parse-better-errors/-/json-parse-better-errors-1.0.2.tgz#bb867cfb3450e69107c131d1c514bab3dc8bcaa9"
   integrity sha512-mrqyZKfX5EhL7hvqcV6WG1yYjnjeuYDzDhhcAAUrq8Po85NBQBJP+ZDUT75qZQ98IkUoBqdkExkukOU7Ts2wrw==
 
-json-ref-escodegen@^0.0.0:
-  version "0.0.0"
-  resolved "https://registry.yarnpkg.com/json-ref-escodegen/-/json-ref-escodegen-0.0.0.tgz#c4886415a5dc7657ab05326574477452f5cd2936"
-  integrity sha512-MeOIFPaoIPndvc4FC45ywZELUVgdzZDWFu02vhvNP2zqiWS4iiX3jgOH/d5WADbHBGM35yIwfGBXo2GVTQ7AmQ==
+"json-ref-escodegen@file:.yalc/json-ref-escodegen":
+  version "0.0.0-0df1c1c5"
   dependencies:
     "@sindresorhus/fnv1a" "^2.0.1"
     astring "^1.4.3"

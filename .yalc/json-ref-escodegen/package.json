@@ -1,0 +1,50 @@
+{
+  "name": "json-ref-escodegen",
+  "version": "0.0.0-0df1c1c5",
+  "description": "Performant, lean and bare-simple JSON Schema $ref resolver",
+  "keywords": [
+    "json",
+    "json-pointer",
+    "json-$ref",
+    "jsonschema",
+    "json-schema",
+    "json-resolver",
+    "json-ref-resolver",
+    "$ref",
+    "openapi",
+    "swagger",
+    "dereference",
+    "resolve"
+  ],
+  "homepage": "https://github.com/P0lip/json-ref-escodegen",
+  "bugs": {
+    "url": "https://github.com/P0lip/json-ref-escodegen/issues"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "files": [
+    "dist/index.cjs",
+    "src/**",
+    "runtime/**"
+  ],
+  "typings": "./src/index.d.ts",
+  "main": "./dist/index.cjs",
+  "license": "Apache-2.0",
+  "author": "P0lip",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/P0lip/json-ref-escodegen"
+  },
+  "scripts": {
+    "build": "NODE_ENV=production rollup -c",
+    "postbuild": "cp src/runtime/*.mjs runtime/",
+    "lint": "eslint --cache --cache-location .cache/ --ext .mjs src/",
+    "test": "NODE_ENV=test c8 mocha --experimental-modules --config .mocharc ./**/__tests__/**/*.test.mjs",
+    "prepublish": "npm run lint && npm run test && npm run build"
+  },
+  "dependencies": {
+    "@sindresorhus/fnv1a": "^2.0.1",
+    "astring": "^1.4.3"
+  }
+}

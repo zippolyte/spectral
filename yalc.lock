@@ -1,0 +1,10 @@
+{
+  "version": "v1",
+  "packages": {
+    "json-ref-escodegen": {
+      "signature": "0df1c1c5d1a67c056e2977586c06608a",
+      "file": true,
+      "replaced": "^0.0.0"
+    }
+  }
+}

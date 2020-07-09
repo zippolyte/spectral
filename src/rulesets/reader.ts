@@ -7,8 +7,8 @@ import { FileRulesetSeverity, IRuleset, RulesetFunctionCollection } from '../typ
 import { findFile, isNPMSource } from './finder';
 import { mergeFormats, mergeFunctions, mergeRules } from './mergers';
 import { mergeExceptions } from './mergers/exceptions';
-// @ts-ignore
 import generate, { Dependencies, ModuleRegistry } from 'json-ref-escodegen';
+const createArray = require('json-ref-escodegen/runtime/create-array.cjs');
 import * as path from '@stoplight/path';
 import { assertValidRuleset } from './validation';
 
@@ -62,27 +62,32 @@ const createRulesetProcessor = (processedRulesets: Set<string>, readOpts: Option
     const { id } = await generate(rulesetUri, {
       module: 'cjs',
       fs: {
-        // @ts-ignore
-        read: async src =>
-          parseContent(
-            await readParsable(src, {
-              timeout: readOpts?.timeout,
-              encoding: 'utf8',
-              agent: readOpts?.agent,
-            }),
-            src,
-          ),
-        // @ts-ignore
-        write: (target, content): void => {
+        read: async source => {
+          const content = await readParsable(source, {
+            timeout: readOpts?.timeout,
+            encoding: 'utf8',
+            agent: readOpts?.agent,
+          });
+
+          if (!source.endsWith('oas/schemas/schema.oas2.json') && !source.endsWith('oas/schemas/schema.oas3.json')) {
+            return parseContent(content, source);
+          }
+
+          return content;
+        },
+        async write(target, content): Promise<void> {
           output[target] = content;
         },
       },
-      path,
+      shouldResolve(source): boolean {
+        return !source.endsWith('oas/schemas/schema.oas2.json') && !source.endsWith('oas/schemas/schema.oas3.json');
+      },
+      path: path as any,
       dependencies: new Dependencies(),
       moduleRegistry: new ModuleRegistry(),
     });
 
-    const ruleset = assertValidRuleset(createFakeRequire(output)(`./${id}.js`));
+    const ruleset = assertValidRuleset(createFakeRequire(output)(`./${id}.cjs`));
     const rules = {};
     const functions = {};
     const exceptions = {};
@@ -166,7 +171,9 @@ const createRulesetProcessor = (processedRulesets: Set<string>, readOpts: Option
 };
 
 function createFakeRequire(availableModules: any) {
-  const evaluatedModules = {};
+  const evaluatedModules = {
+    'json-ref-escodegen/runtime/create-array.cjs': createArray,
+  };
 
   return function require(path: string) {
     if (path in evaluatedModules) {
