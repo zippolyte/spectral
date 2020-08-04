@@ -12,11 +12,11 @@ export class Replacer<V extends object> {
     this.transformers = {};
   }
 
-  public addTransformer(name: string, filter: Transformer<V[keyof V], V>) {
+  public addTransformer(name: string, filter: Transformer<V[keyof V], V>): void {
     this.transformers[name] = filter;
   }
 
-  public print(input: string, values: V) {
+  public print(input: string, values: V): string {
     return input.replace(this.regex, (substr, expr) => {
       const [identifier, ...transformers] = expr.split('|');
 
@@ -32,5 +32,9 @@ export class Replacer<V extends object> {
 
       return String(values[identifier]);
     });
+  }
+
+  public isInterpolatable(input: string): boolean {
+    return this.regex.test(input);
   }
 }

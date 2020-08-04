@@ -5,6 +5,7 @@ import { IDocument } from './document';
 import { DEFAULT_SEVERITY_LEVEL, getDiagnosticSeverity } from './rulesets/severity';
 import { IGivenNode, IRule, IThen, SpectralDiagnosticSeverity } from './types';
 import { hasIntersectingElement } from './utils';
+import { messageReplacer } from './rulesets/message';
 
 export class Rule {
   public readonly name: string;
@@ -17,7 +18,17 @@ export class Rule {
   public readonly then: IThen[];
   public readonly given: string[];
 
-  public get enabled() {
+  private _isInterpolatable?: boolean;
+
+  public get isInterpolatable(): boolean {
+    if (this._isInterpolatable === void 0) {
+      this._isInterpolatable = this.message !== null && messageReplacer.isInterpolatable(this.message);
+    }
+
+    return this._isInterpolatable;
+  }
+
+  public get enabled(): boolean {
     return this.severity !== -1;
   }
 
@@ -33,7 +44,7 @@ export class Rule {
     this.given = Array.isArray(rule.given) ? rule.given : [rule.given];
   }
 
-  public matchesFormat(formats: IDocument['formats']) {
+  public matchesFormat(formats: IDocument['formats']): boolean {
     if (this.formats === void 0) {
       return true;
     }
@@ -61,9 +72,9 @@ export class OptimizedRule extends Rule {
     });
   }
 
-  public hookup(cb: (rule: OptimizedRule, node: IGivenNode) => void) {
+  public hookup(cb: (rule: OptimizedRule, node: IGivenNode) => void): void {
     for (const expr of this.expressions) {
-      expr.onMatch = (value, path) => {
+      expr.onMatch = (value, path): void => {
         cb(this, {
           path,
           value,

@@ -1,14 +1,15 @@
 import { JsonPath, Optional } from '@stoplight/types';
 import { get } from 'lodash';
 
-import { Document } from '../document';
+import { Document, IDocument } from '../document';
 import { Rule } from '../rule';
-import { IMessageVars, message } from '../rulesets/message';
+import { IMessageVars, message as printMessage } from '../rulesets/message';
 import { getDiagnosticSeverity } from '../rulesets/severity';
 import { IFunctionResult, IFunctionValues, IGivenNode } from '../types';
 import { decodeSegmentFragment, getClosestJsonPath, printPath, PrintStyle } from '../utils';
 import { IRunnerInternalContext } from './types';
 import { getLintTargets, IExceptionLocation, isAKnownException } from './utils';
+import { DocumentInventoryItem } from '../documentInventory';
 
 export const lintNode = (
   context: IRunnerInternalContext,
@@ -96,10 +97,7 @@ function processTargetResults(
 ): void {
   for (const result of results) {
     const escapedJsonPath = (result.path ?? targetPath).map(decodeSegmentFragment);
-    const associatedItem = context.documentInventory.findAssociatedItemForPath(
-      escapedJsonPath,
-      rule.resolved !== false,
-    );
+    const associatedItem = context.documentInventory.findAssociatedItemForPath(escapedJsonPath, rule.resolved);
     const path = associatedItem?.path ?? getClosestJsonPath(context.documentInventory.resolved, escapedJsonPath);
     const source = associatedItem?.document.source;
 
@@ -109,33 +107,55 @@ function processTargetResults(
 
     const document = associatedItem?.document ?? context.documentInventory.document;
     const range = document.getRangeForJsonPath(path, true) ?? Document.DEFAULT_RANGE;
-    const value = path.length === 0 ? document.data : get(document.data, path);
 
-    const vars: IMessageVars = {
-      property:
-        associatedItem?.missingPropertyPath && associatedItem.missingPropertyPath.length > path.length
-          ? printPath(associatedItem.missingPropertyPath.slice(path.length - 1), PrintStyle.Dot)
-          : path.length > 0
-          ? path[path.length - 1]
-          : '',
-      error: result.message,
-      path: printPath(path, PrintStyle.EscapedPointer),
-      description: rule.description,
-      value,
-    };
-
-    const resultMessage = message(result.message, vars);
-    vars.error = resultMessage;
+    let message: string;
+    if (rule.message !== null) {
+      message = rule.isInterpolatable
+        ? printMessage(rule.message, getMessageVars(associatedItem, document, path, result, rule))
+        : rule.message;
+    } else if (rule.description !== null) {
+      message = rule.description;
+    } else {
+      message = printMessage(result.message, getMessageVars(associatedItem, document, path, null, rule));
+    }
 
     context.results.push({
       code: rule.name,
-      // todo: rule.isInterpolable
-      message: (rule.message === null ? rule.description ?? resultMessage : message(rule.message, vars)).trim(),
+      message: message.trim(),
       path,
       resolvedPath: escapedJsonPath,
       severity: getDiagnosticSeverity(rule.severity),
-      ...(source !== null && { source }),
+      ...(source !== null ? { source } : null),
       range,
     });
   }
+}
+
+function getMessageVars(
+  associatedItem: DocumentInventoryItem | null,
+  document: IDocument,
+  path: JsonPath,
+  result: IFunctionResult | null,
+  rule: Rule,
+): IMessageVars {
+  const value = path.length === 0 ? document.data : get(document.data, path);
+
+  const vars: IMessageVars = {
+    property:
+      associatedItem?.missingPropertyPath && associatedItem.missingPropertyPath.length > path.length
+        ? printPath(associatedItem.missingPropertyPath.slice(path.length - 1), PrintStyle.Dot)
+        : path.length > 0
+        ? path[path.length - 1]
+        : '',
+    error: '',
+    path: printPath(path, PrintStyle.EscapedPointer),
+    description: rule.description,
+    value,
+  };
+
+  if (result !== null) {
+    vars.error = printMessage(result.message, vars);
+  }
+
+  return vars;
 }
