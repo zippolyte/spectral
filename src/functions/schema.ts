@@ -101,6 +101,7 @@ const validators = new (class extends WeakMap<JSONSchema, ValidateFunction> {
 
     validator = super.get(schemaObj);
     if (validator === void 0) {
+      console.log('validators.get.schemaObj', JSON.stringify(schemaObj));
       // compiling might give us some perf improvements
       validator = ajv.compile(schemaObj);
       super.set(schemaObj, validator);
@@ -111,6 +112,10 @@ const validators = new (class extends WeakMap<JSONSchema, ValidateFunction> {
 })();
 
 export const schema: ISchemaFunction = (targetVal, opts, paths, { rule }) => {
+  console.log('targetVal', targetVal);
+  console.log('opts', opts);
+  console.log('paths', paths);
+  console.log('rule', rule);
   const path = paths.target ?? paths.given;
 
   if (targetVal === void 0) {
@@ -144,6 +149,7 @@ export const schema: ISchemaFunction = (targetVal, opts, paths, { rule }) => {
       );
     }
   } catch (ex) {
+    console.log('schema.ex', JSON.stringify(ex));
     if (!(ex instanceof AJV.MissingRefError)) {
       throw ex;
     } else if (!rule.resolved) {

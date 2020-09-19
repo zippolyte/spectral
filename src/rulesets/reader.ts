@@ -30,6 +30,8 @@ export async function readRuleset(uris: string | string[], opts?: IRulesetReadOp
     exceptions: {},
   };
 
+  console.log('readRuleset.uris', JSON.stringify(uris));
+  console.log('readRuleset.cwd', process.cwd());
   const processedRulesets = new Set<string>();
   const processRuleset = createRulesetProcessor(processedRulesets, new Cache(), opts);
 
@@ -60,6 +62,10 @@ const createRulesetProcessor = (
     severity?: FileRulesetSeverity,
   ): Promise<IRuleset | null> {
     const rulesetUri = await findFile(join(baseUri, '..'), uri);
+    console.log('processRuleset.baseUri', JSON.stringify(rulesetUri));
+    console.log('processRuleset.uri', JSON.stringify(rulesetUri));
+    console.log('processRuleset.rulesetUri', JSON.stringify(rulesetUri));
+
     if (processedRulesets.has(rulesetUri)) {
       return null;
     }
@@ -79,6 +85,7 @@ const createRulesetProcessor = (
         dereferenceInline: false,
         uriCache,
         async parseResolveResult(opts) {
+          console.log('parseResolveResult.opts', opts);
           opts.result = parseContent(opts.result, opts.targetAuthority.pathname());
           return opts;
         },
