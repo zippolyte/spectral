@@ -71,7 +71,7 @@ const createRulesetProcessor = (
     }
 
     processedRulesets.add(rulesetUri);
-    const { result } = await createHttpAndFileResolver({ agent: readOpts?.agent }).resolve(
+    const { result, errors } = await createHttpAndFileResolver({ agent: readOpts?.agent }).resolve(
       parseContent(
         await readParsable(rulesetUri, {
           timeout: readOpts?.timeout,
@@ -91,6 +91,10 @@ const createRulesetProcessor = (
         },
       },
     );
+
+    if (errors.length > 0) {
+      throw new Error(`At least an error happened during resolving of the ruleset: ${JSON.stringify(errors)}`);
+    }
 
     const ruleset = assertValidRuleset(JSON.parse(JSON.stringify(result)));
     const rules = {};
