@@ -85,7 +85,9 @@ const createRulesetProcessor = (
         dereferenceInline: false,
         uriCache,
         async parseResolveResult(opts) {
-          console.log('parseResolveResult.opts', opts);
+          console.log('parseResolveResult.opts.targetAuthority', opts.targetAuthority);
+          console.log('parseResolveResult.opts.parentAuthority', opts.parentAuthority);
+          console.log('parseResolveResult.opts.parentPath', opts.parentPath);
           opts.result = parseContent(opts.result, opts.targetAuthority.pathname());
           return opts;
         },
