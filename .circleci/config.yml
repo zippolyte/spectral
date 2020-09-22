@@ -83,7 +83,7 @@ jobs:
           install-yarn: true
           install-npm: false
       - install-and-build
-      # - test-node
+      - test-node
       - test-harness
 
   test-browser:
@@ -105,7 +105,7 @@ jobs:
     steps:
       - checkout
       - install-and-build
-      # - test-node
+      - test-node
       - test-harness
 
   build-windows-binary:
@@ -164,7 +164,7 @@ workflows:
                 - "12.9"
                 - "14.9"
       - test-windows
-      # - test-browser
+      - test-browser
 
   release:
     jobs:
