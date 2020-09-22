@@ -60,7 +60,6 @@ const createRulesetProcessor = (
     severity?: FileRulesetSeverity,
   ): Promise<IRuleset | null> {
     const rulesetUri = await findFile(join(baseUri, '..'), uri);
-
     if (processedRulesets.has(rulesetUri)) {
       return null;
     }

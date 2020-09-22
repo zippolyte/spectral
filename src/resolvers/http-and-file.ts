@@ -15,6 +15,7 @@ export const httpAndFileResolver = createHttpAndFileResolver();
 export function createHttpAndFileResolver(opts?: IHttpAndFileResolverOptions): Resolver {
   const resolveHttp = createResolveHttp({ ...DEFAULT_REQUEST_OPTIONS, ...opts });
 
+  // Note: this should be better fixed at @stoplight/json-ref-readers level
   const patchedResolved = (ref: URI): Promise<unknown> => {
     return new Promise((resolve, reject) => {
       const path = ref.valueOf();
