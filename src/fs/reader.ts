@@ -14,34 +14,21 @@ export interface IReadOptions {
 
 export async function readFile(name: string | number, opts: IReadOptions): Promise<string> {
   if (typeof name === 'number') {
-    let result = '';
+    // Piped through STDIN
+    return readFrom(name, opts.encoding);
+  }
 
-    const stream = fs.createReadStream('', { fd: name });
-    stream.setEncoding(opts.encoding);
-
-    stream.on('readable', () => {
-      let chunk: string | null;
-
-      while ((chunk = stream.read()) !== null) {
-        result += chunk;
-      }
-    });
-
-    return new Promise<string>((resolve, reject) => {
-      stream.on('error', reject);
-      stream.on('end', () => {
-        resolve(result);
-      });
-    });
-  } else if (name in STATIC_ASSETS) {
+  if (name in STATIC_ASSETS) {
     return STATIC_ASSETS[name];
-  } else if (isURL(name)) {
+  }
+
+  if (isURL(name)) {
     let response;
     let timeout: NodeJS.Timeout | number | null = null;
     try {
       const requestOpts: RequestInit = {};
       requestOpts.agent = opts.agent;
-      if (opts.timeout) {
+      if (opts.timeout !== void 0) {
         const controller = new AbortController();
         timeout = setTimeout(() => {
           controller.abort();
@@ -64,21 +51,25 @@ export async function readFile(name: string | number, opts: IReadOptions): Promi
         clearTimeout(timeout);
       }
     }
-  } else {
-    try {
-      return await new Promise((resolve, reject) => {
-        fs.readFile(name, opts.encoding, (err, data) => {
-          if (err !== null) {
-            reject(err);
-          } else {
-            resolve(data);
-          }
-        });
-      });
-    } catch (ex) {
-      throw new Error(`Could not read ${name}: ${ex.message}`);
-    }
   }
+
+  try {
+    return await readFrom(name, opts.encoding);
+  } catch (ex) {
+    throw new Error(`Could not read ${name}: ${ex.message}`);
+  }
+}
+
+async function readFrom(name: string | number, encoding: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    fs.readFile(name, encoding, (err, data) => {
+      if (err !== null) {
+        reject(err);
+      } else {
+        resolve(data);
+      }
+    });
+  });
 }
 
 export async function readParsable(name: string | number, opts: IReadOptions): Promise<string> {
