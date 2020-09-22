@@ -33,7 +33,7 @@
     "node": ">=10.18"
   },
   "scripts": {
-    "build.binary": "pkg . --debug --output ./binaries/spectral",
+    "build.binary": "pkg . --output ./binaries/spectral",
     "build.clean": "rimraf ./coverage && rimraf ./dist && rimraf ./rulesets && rimraf ./__karma__/__fixtures__",
     "build.functions": "rollup -c",
     "build": "tsc -p ./tsconfig.build.json",

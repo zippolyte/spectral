@@ -10,6 +10,7 @@ import { mergeFormats, mergeFunctions, mergeRules } from './mergers';
 import { mergeExceptions } from './mergers/exceptions';
 import { assertValidRuleset } from './validation';
 import { parseYaml } from '../parsers';
+import { readdirSync, readFileSync } from 'fs';
 
 export interface IRulesetReadOptions extends IHttpAndFileResolverOptions {
   timeout?: number;
@@ -95,6 +96,13 @@ const createRulesetProcessor = (
     );
 
     if (errors.length > 0) {
+      console.log('errors', JSON.stringify(errors));
+      // const contentBackward = readdirSync('c:\\snapshot\\project\\dist\\rulesets\\oas\\schemas\\', 'utf8');
+      // console.log('contentWin', contentBackward);
+      const contentForward = readdirSync('c:/snapshot/spectral/dist/rulesets/oas/schemas', 'utf8');
+      console.log('contentWin', contentForward);
+      const contentOasFile = readFileSync('c:/snapshot/spectral/dist/rulesets/oas/schemas/schema.oas3.json', 'utf8');
+      console.log('contentOas', contentOasFile.substr(0, 50));
       throw new Error(`At least an error happened during resolving of the ruleset: ${JSON.stringify(errors)}`);
     }
 
