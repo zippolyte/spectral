@@ -1,7 +1,7 @@
 import { Dictionary, Optional } from '@stoplight/types';
 import * as tmp from 'tmp';
 
-const IS_WINDOWS = process.platform === 'win32';
+export const IS_WINDOWS = process.platform === 'win32';
 
 export interface IScenarioFile {
   test: string;
@@ -44,13 +44,19 @@ export function parseScenarioFile(data: string): IScenarioFile {
   const env = getItem(split, 'env');
 
   if (command === void 0) {
-    if (commandWindows !== void 0 && commandUnix !== void 0) {
-      throw new Error('No ====command==== provided');
+    if (commandWindows === void 0 && commandUnix === void 0) {
+      throw new Error(
+        'When no ====command==== is provided, both ====command-nix==== and ====command-win==== should be defined',
+      );
     }
 
     command = IS_WINDOWS ? commandWindows : commandUnix;
   } else if (commandWindows !== void 0 || commandUnix !== void 0) {
     throw new Error('===command==== cannot be used along ====command-nix==== or ====command-win====');
+  }
+
+  if (IS_WINDOWS) {
+    command = `powershell -Command ${command}`;
   }
 
   const assets = split.reduce<string[][]>((filtered, item, i) => {
@@ -113,7 +119,7 @@ export function tmpFile(opts?: tmp.TmpNameOptions): Promise<tmp.FileResult> {
 
 const BRACES = /{([^}]+)}/g;
 
-export const applyReplacements = (str: string, values: Dictionary<string>) => {
+export const applyReplacements = (str: string, values: Dictionary<string>): string => {
   const replacer = (match: string, identifier: string): string => {
     if (!(identifier in values)) {
       return match;

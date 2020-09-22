@@ -2,7 +2,8 @@ import { join } from '@stoplight/path';
 import { Optional } from '@stoplight/types';
 import * as child_process from 'child_process';
 import { Transform } from 'stream';
-import { normalizeLineEndings } from './helpers';
+import Shell = require('node-powershell');
+import { normalizeLineEndings, IS_WINDOWS } from './helpers';
 
 const cwd = join(__dirname, 'scenarios');
 
@@ -14,15 +15,15 @@ export type SpawnReturn = {
 
 export type SpawnFn = (command: string, env: Optional<typeof process.env>) => Promise<SpawnReturn>;
 
-const createStream = () =>
+const createStream = (): Transform =>
   new Transform({
-    transform(chunk, encoding, done) {
+    transform(chunk, encoding, done): void {
       this.push(chunk);
       done();
     },
   });
 
-function stringifyStream(stream: Transform) {
+function stringifyStream(stream: Transform): Promise<string> {
   let result = '';
 
   stream.on('readable', () => {
@@ -42,7 +43,41 @@ function stringifyStream(stream: Transform) {
   });
 }
 
+export const spawnPowershell = async (command: string): Promise<SpawnReturn> => {
+  const ps = new Shell({
+    executionPolicy: 'Bypass',
+    noProfile: true,
+  });
+
+  const winCommand = command.replace(/\/binaries\/(spectral\.exe|spectral)/, '/binaries/spectral.exe');
+
+  console.log(winCommand);
+
+  await ps.addCommand(winCommand);
+
+  try {
+    const s = await ps.invoke();
+    return {
+      stderr: '',
+      stdout: normalizeLineEndings(s),
+      status: 0,
+    };
+  } catch (err) {
+    return {
+      stderr: normalizeLineEndings(err.message),
+      stdout: '',
+      status: 1,
+    };
+  } finally {
+    await ps.dispose();
+  }
+};
+
 export const spawnNode: SpawnFn = async (script, env) => {
+  if (IS_WINDOWS) {
+    return spawnPowershell(script);
+  }
+
   const stderr = createStream();
   const stdout = createStream();
 
