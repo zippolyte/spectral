@@ -10,7 +10,6 @@ import { mergeFormats, mergeFunctions, mergeRules } from './mergers';
 import { mergeExceptions } from './mergers/exceptions';
 import { assertValidRuleset } from './validation';
 import { parseYaml } from '../parsers';
-import { readdirSync, readFileSync } from 'fs';
 
 export interface IRulesetReadOptions extends IHttpAndFileResolverOptions {
   timeout?: number;
@@ -31,8 +30,6 @@ export async function readRuleset(uris: string | string[], opts?: IRulesetReadOp
     exceptions: {},
   };
 
-  console.log('readRuleset.uris', JSON.stringify(uris));
-  console.log('readRuleset.cwd', process.cwd());
   const processedRulesets = new Set<string>();
   const processRuleset = createRulesetProcessor(processedRulesets, new Cache(), opts);
 
@@ -63,9 +60,6 @@ const createRulesetProcessor = (
     severity?: FileRulesetSeverity,
   ): Promise<IRuleset | null> {
     const rulesetUri = await findFile(join(baseUri, '..'), uri);
-    console.log('processRuleset.baseUri', JSON.stringify(rulesetUri));
-    console.log('processRuleset.uri', JSON.stringify(rulesetUri));
-    console.log('processRuleset.rulesetUri', JSON.stringify(rulesetUri));
 
     if (processedRulesets.has(rulesetUri)) {
       return null;
@@ -86,23 +80,13 @@ const createRulesetProcessor = (
         dereferenceInline: false,
         uriCache,
         async parseResolveResult(opts) {
-          console.log('parseResolveResult.opts.targetAuthority', opts.targetAuthority);
-          console.log('parseResolveResult.opts.parentAuthority', opts.parentAuthority);
-          console.log('parseResolveResult.opts.parentPath', opts.parentPath);
-          opts.result = parseContent(opts.result, opts.targetAuthority.pathname());
+          opts.result = parseContent(opts.result, opts.targetAuthority.valueOf());
           return opts;
         },
       },
     );
 
     if (errors.length > 0) {
-      console.log('errors', JSON.stringify(errors));
-      // const contentBackward = readdirSync('c:\\snapshot\\project\\dist\\rulesets\\oas\\schemas\\', 'utf8');
-      // console.log('contentWin', contentBackward);
-      const contentForward = readdirSync('c:/snapshot/spectral/dist/rulesets/oas/schemas', 'utf8');
-      console.log('contentWin', contentForward);
-      const contentOasFile = readFileSync('c:/snapshot/spectral/dist/rulesets/oas/schemas/schema.oas3.json', 'utf8');
-      console.log('contentOas', contentOasFile.substr(0, 50));
       throw new Error(`At least an error happened during resolving of the ruleset: ${JSON.stringify(errors)}`);
     }
 

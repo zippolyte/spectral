@@ -2,7 +2,7 @@ import { createResolveHttp } from '@stoplight/json-ref-readers';
 import { Resolver } from '@stoplight/json-ref-resolver';
 import { DEFAULT_REQUEST_OPTIONS } from '../request';
 import { Agent } from 'http';
-import { readFileSync } from 'fs';
+import { readFile } from 'fs';
 import * as URI from 'urijs';
 
 export interface IHttpAndFileResolverOptions {
@@ -17,15 +17,13 @@ export function createHttpAndFileResolver(opts?: IHttpAndFileResolverOptions): R
 
   const patchedResolved = (ref: URI): Promise<unknown> => {
     return new Promise((resolve, reject) => {
-      const path = ref.toString();
-
-      console.log('patchedResolved.path', path);
-      try {
-        const result = readFileSync(path, 'utf8');
-        resolve(result);
-      } catch (err) {
-        reject(err);
-      }
+      const path = ref.valueOf();
+      readFile(path, 'utf8', (err, data) => {
+        if (err !== null) {
+          reject(err);
+        }
+        resolve(data);
+      });
     });
   };
 
