@@ -21,7 +21,9 @@ beforeEach(() => {
 
   readFileSpy.mockImplementation((path, encoding, cb) => {
     return readFile(
-      path.replace(/(src)\/(rulesets\/oas\d?\/(?!__tests__))/, (str: string, val: string, p: string) => `dist/${p}`),
+      typeof(path) === 'string' ?
+      path.replace(/(src)\/(rulesets\/oas\d?\/(?!__tests__))/, (str: string, val: string, p: string) => `dist/${p}`):
+      path,
       encoding,
       cb,
     );
