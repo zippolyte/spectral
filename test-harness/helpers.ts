@@ -137,5 +137,7 @@ export const applyReplacements = (str: string, values: Dictionary<string>): stri
 };
 
 export const normalizeLineEndings = (str: string): string => {
-  return str.replace(/\r?\n/g, '\n');
+  const normalized = str.replace(/\r?\n/g, '\n');
+  const trimmed = normalized.replace(/\n+$/g, '');
+  return trimmed;
 };
