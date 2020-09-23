@@ -43,6 +43,8 @@ function stringifyStream(stream: Transform): Promise<string> {
   });
 }
 
+const r = /.*LASTEXITCODE=(.*)\n.*/s;
+
 export const spawnPowershell = async (command: string): Promise<SpawnReturn> => {
   const ps = new Shell({
     executionPolicy: 'Bypass',
@@ -51,14 +53,19 @@ export const spawnPowershell = async (command: string): Promise<SpawnReturn> => 
 
   const winCommand = command.replace(/\/binaries\/(spectral\.exe|spectral)/, '/binaries/spectral.exe');
 
-  await ps.addCommand(`${winCommand};echo $LASTEXITCODE;`);
+  await ps.addCommand(`${winCommand};echo LASTEXITCODE=$LASTEXITCODE;`);
 
   try {
-    const s = await ps.invoke();
+    const stdOut = await ps.invoke();
+    const splitted = r.exec(stdOut);
+    if (splitted === null) {
+      throw new Error('No LASTEXITCODE has been found in the output.');
+    }
+
     return {
       stderr: '',
-      stdout: normalizeLineEndings(s),
-      status: 0,
+      stdout: normalizeLineEndings(splitted[0]),
+      status: Number(splitted[1]),
     };
   } catch (err) {
     return {
