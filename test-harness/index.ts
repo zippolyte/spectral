@@ -74,6 +74,9 @@ describe('cli acceptance tests', () => {
       const expectedStdout = scenario.stdout === void 0 ? void 0 : applyReplacements(scenario.stdout, replacements);
       const expectedStderr = scenario.stderr === void 0 ? void 0 : applyReplacements(scenario.stderr, replacements);
 
+      const buffOut = Buffer.from(stdout, 'utf-8');
+      console.log('buffOut', buffOut.toString('hex'));
+
       if (expectedStderr !== void 0) {
         expect(stderr).toEqual(normalizeLineEndings(expectedStderr));
       } else if (stderr) {

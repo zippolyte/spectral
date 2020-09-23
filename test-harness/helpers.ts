@@ -43,20 +43,25 @@ export function parseScenarioFile(data: string): IScenarioFile {
   const stderr = getItem(split, 'stderr');
   const env = getItem(split, 'env');
 
+  // either commmand only
+  // or command-nix OR command-win OR (command-nix AND command-win)
+  //
+  // eg. command => Same script is run whatever the platform
+  //     command-nix only => The test only works on Linux based systems
+  //     command-nix & command-win => The test works on every platform, through different syntaxes
   if (command === void 0) {
-    if (commandWindows === void 0 && commandUnix === void 0) {
-      throw new Error(
-        'When no ====command==== is provided, both ====command-nix==== and ====command-win==== should be defined',
-      );
+    if ((commandWindows === void 0 && commandUnix === void 0) {
+      throw new Error('No ====command[-nix|-win]==== provided');
     }
-
-    command = IS_WINDOWS ? commandWindows : commandUnix;
   } else if (commandWindows !== void 0 || commandUnix !== void 0) {
     throw new Error('===command==== cannot be used along ====command-nix==== or ====command-win====');
   }
 
   if (IS_WINDOWS) {
+    command = commandWindows ?? command
     command = `powershell -Command ${command}`;
+  } else {
+    command = commandUnix ?? command
   }
 
   const assets = split.reduce<string[][]>((filtered, item, i) => {
