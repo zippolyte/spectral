@@ -59,7 +59,6 @@ export function parseScenarioFile(data: string): IScenarioFile {
 
   if (IS_WINDOWS) {
     command = commandWindows ?? command;
-    command = `powershell -Command ${command}`;
   } else {
     command = commandUnix ?? command;
   }

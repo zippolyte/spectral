@@ -7,8 +7,10 @@ info:
   version: 1.0.0
   title: Stoplight
 paths: {}
-====command====
+====command-nix====
 {bin} lint {document} --output={asset:output.txt} > /dev/null; cat {asset:output.txt}
+====command-win====
+{bin} lint {document} --output={asset:output.txt} | Out-Null; cat {asset:output.txt}
 ====asset:output.txt====
 ====stdout====
 {document}
