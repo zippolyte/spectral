@@ -50,7 +50,7 @@ export function parseScenarioFile(data: string): IScenarioFile {
   //     command-nix only => The test only works on Linux based systems
   //     command-nix & command-win => The test works on every platform, through different syntaxes
   if (command === void 0) {
-    if ((commandWindows === void 0 && commandUnix === void 0) {
+    if (commandWindows === void 0 && commandUnix === void 0) {
       throw new Error('No ====command[-nix|-win]==== provided');
     }
   } else if (commandWindows !== void 0 || commandUnix !== void 0) {
@@ -58,10 +58,10 @@ export function parseScenarioFile(data: string): IScenarioFile {
   }
 
   if (IS_WINDOWS) {
-    command = commandWindows ?? command
+    command = commandWindows ?? command;
     command = `powershell -Command ${command}`;
   } else {
-    command = commandUnix ?? command
+    command = commandUnix ?? command;
   }
 
   const assets = split.reduce<string[][]>((filtered, item, i) => {

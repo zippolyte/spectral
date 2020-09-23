@@ -32,14 +32,14 @@ commands:
     steps:
       - cached-dependencies
       - run:
+          name: Lint the code
+          command: yarn lint
+      - run:
           name: Build the code
           command: yarn build
 
   test-node:
     steps:
-      - run:
-          name: Lint the code
-          command: yarn lint
       - run:
           name: Run node tests
           command: yarn test --coverage --maxWorkers=2
