@@ -43,7 +43,7 @@ function stringifyStream(stream: Transform): Promise<string> {
   });
 }
 
-const r = /.*LASTEXITCODE=(.*)\r?\n.*/s;
+const r = /(.*)LASTEXITCODE=(.*)\r?\n.*/s;
 
 export const spawnPowershell = async (command: string): Promise<SpawnReturn> => {
   const ps = new Shell({
@@ -59,7 +59,6 @@ export const spawnPowershell = async (command: string): Promise<SpawnReturn> => 
     const stdOut = await ps.invoke();
     const splitted = r.exec(stdOut);
 
-    console.warn(splitted);
     if (splitted === null) {
       throw new Error('No LASTEXITCODE has been found in the output.');
     }
