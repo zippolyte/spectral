@@ -51,7 +51,7 @@ export const spawnPowershell = async (command: string): Promise<SpawnReturn> => 
 
   const winCommand = command.replace(/\/binaries\/(spectral\.exe|spectral)/, '/binaries/spectral.exe');
 
-  await ps.addCommand(winCommand);
+  await ps.addCommand(`${winCommand};echo $LASTEXITCODE;`);
 
   try {
     const s = await ps.invoke();
