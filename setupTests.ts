@@ -1,5 +1,3 @@
-import { RulesetExceptionCollection } from './src/types/ruleset';
-
 import { IRule, isAsyncApiv2, Rule, RuleCollection, Spectral } from './src';
 import { rules as asyncApiRules } from './src/rulesets/asyncapi/index.json';
 

@@ -1,7 +1,7 @@
 import * as path from '@stoplight/path';
 import * as fs from 'fs';
-import { RESOLVE_ALIASES, STATIC_ASSETS } from '../assets';
-import { NPM_PKG_ROOT, SPECTRAL_PKG_NAME, SPECTRAL_PKG_VERSION } from '../consts';
+import { SPECTRAL_PKG_VERSION, SPECTRAL_PKG_NAME, NPM_PKG_ROOT } from '../../consts';
+import { RESOLVE_ALIASES, STATIC_ASSETS } from '../../assets';
 
 // let's point at dist directory that has all relevant files (including custom functions) transpiled
 const SPECTRAL_SRC_ROOT = path.join(__dirname, '../../dist');

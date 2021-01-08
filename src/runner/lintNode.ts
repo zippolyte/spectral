@@ -2,13 +2,12 @@ import { JsonPath, Optional } from '@stoplight/types';
 import { get } from 'lodash';
 
 import { Document } from '../document';
-import { Rule } from '../rule';
-import { IMessageVars, message } from '../rulesets/message';
-import { getDiagnosticSeverity } from '../rulesets/severity';
 import { IFunctionResult, IFunctionValues, IGivenNode } from '../types';
 import { decodeSegmentFragment, getClosestJsonPath, printPath, PrintStyle } from '../utils';
 import { IRunnerInternalContext } from './types';
 import { getLintTargets, ExceptionLocation, isAKnownException } from './utils';
+import { Rule } from '../ruleset/rule/rule';
+import { IMessageVars, message } from './message';
 
 export const lintNode = (
   context: IRunnerInternalContext,
@@ -96,10 +95,7 @@ function processTargetResults(
 ): void {
   for (const result of results) {
     const escapedJsonPath = (result.path ?? targetPath).map(decodeSegmentFragment);
-    const associatedItem = context.documentInventory.findAssociatedItemForPath(
-      escapedJsonPath,
-      rule.resolved !== false,
-    );
+    const associatedItem = context.documentInventory.findAssociatedItemForPath(escapedJsonPath, rule.resolved);
     const path = associatedItem?.path ?? getClosestJsonPath(context.documentInventory.resolved, escapedJsonPath);
     const source = associatedItem?.document.source;
 
@@ -132,7 +128,7 @@ function processTargetResults(
       // todo: rule.isInterpolable
       message: (rule.message === null ? rule.description ?? resultMessage : message(rule.message, vars)).trim(),
       path,
-      severity: getDiagnosticSeverity(rule.severity),
+      severity: rule.severity,
       ...(source !== null ? { source } : null),
       range,
     });

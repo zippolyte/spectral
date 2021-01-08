@@ -1,7 +1,7 @@
 import { JsonPath } from '@stoplight/types';
 import { DocumentInventory } from '../documentInventory';
 import { CoreFunctions } from '../functions';
-import { Rule } from '../rule';
+import type { Rule } from '../ruleset/rule/rule';
 
 export interface IFunctionContext {
   functions: CoreFunctions;

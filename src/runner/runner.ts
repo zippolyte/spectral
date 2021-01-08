@@ -5,14 +5,15 @@ import { JSONPathExpression, traverse } from 'nimma';
 
 import { IDocument, STDIN } from '../document';
 import { DocumentInventory } from '../documentInventory';
-import { OptimizedRule, Rule } from '../rule';
 import { IGivenNode, IRuleResult } from '../types';
 import { ComputeFingerprintFunc, prepareResults } from '../utils';
 import { generateDocumentWideResult } from '../utils/generateDocumentWideResult';
 import { lintNode } from './lintNode';
 import { RunnerRuntime } from './runtime';
-import { IRunnerInternalContext, IRunnerPublicContext } from './types';
+import { IRunnerInternalContext } from './types';
 import { ExceptionLocation, pivotExceptions } from './utils';
+import { Rule } from '../ruleset/rule/rule';
+import { Ruleset } from '../ruleset/ruleset';
 
 const isStdInSource = (inventory: DocumentInventory): boolean => {
   return inventory.document.source === STDIN;
@@ -88,41 +89,39 @@ export class Runner {
     this.results.push(result);
   }
 
-  public async run(context: IRunnerPublicContext): Promise<void> {
+  public async run(ruleset: Ruleset): Promise<void> {
     this.runtime.emit('setup');
 
     const { inventory: documentInventory } = this;
 
-    const { rules, exceptions } = context;
-
     const runnerContext: IRunnerInternalContext = {
-      ...context,
+      ruleset,
       documentInventory,
       results: this.results,
       promises: [],
     };
 
     const isStdIn = isStdInSource(documentInventory);
-    const exceptRuleByLocations = isStdIn ? {} : pivotExceptions(exceptions, rules);
+    const exceptRuleByLocations = isStdIn ? {} : pivotExceptions(ruleset.exceptions, ruleset.rules);
 
-    if (isStdIn && Object.keys(exceptions).length > 0) {
+    if (isStdIn && ruleset.exceptions !== null && Object.keys(ruleset.exceptions).length > 0) {
       runnerContext.results.push(generateDefinedExceptionsButStdIn(documentInventory));
     }
 
-    const relevantRules = Object.values(rules).filter(
+    const relevantRules = Object.values(ruleset.rules).filter(
       rule => rule.enabled && rule.matchesFormat(documentInventory.formats),
     );
 
-    const optimizedRules: OptimizedRule[] = [];
-    const optimizedUnresolvedRules: OptimizedRule[] = [];
+    const optimizedRules: Rule[] = [];
+    const optimizedUnresolvedRules: Rule[] = [];
     const unoptimizedRules: Rule[] = [];
 
-    const traverseCb = (rule: OptimizedRule, node: IGivenNode): void => {
+    const traverseCb = (rule: Rule, node: IGivenNode): void => {
       lintNode(runnerContext, node, rule, exceptRuleByLocations[rule.name]);
     };
 
     for (const rule of relevantRules) {
-      if (!(rule instanceof OptimizedRule)) {
+      if (!rule.isOptimized) {
         unoptimizedRules.push(rule);
         continue;
       }
@@ -168,6 +167,6 @@ export class Runner {
   }
 }
 
-function pickExpressions({ expressions }: OptimizedRule): JSONPathExpression[] {
-  return expressions;
+function pickExpressions({ expressions }: Rule): JSONPathExpression[] {
+  return expressions!;
 }

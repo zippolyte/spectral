@@ -1,6 +1,6 @@
 import { extractPointerFromRef, extractSourceFromRef, pointerToPath } from '@stoplight/json';
 import { isAbsolute, join, normalize as pathNormalize } from '@stoplight/path';
-import { RulesetExceptionCollection } from '../../types/ruleset';
+import { RulesetExceptionCollection } from '../types';
 
 export class InvalidUriError extends Error {
   constructor(message: string) {
@@ -8,10 +8,10 @@ export class InvalidUriError extends Error {
   }
 }
 
-const normalize = ($ref: string, rulesetUri?: string): string => {
+const normalize = ($ref: string, rulesetUri: string): string => {
   const source = extractSourceFromRef($ref);
 
-  if (rulesetUri === void 0 && source !== null && !isAbsolute(source)) {
+  if (source !== null && !isAbsolute(source)) {
     throw new InvalidUriError(
       buildInvalidUriErrorMessage(
         $ref,
@@ -41,7 +41,7 @@ const normalize = ($ref: string, rulesetUri?: string): string => {
     return pointer as string;
   }
 
-  const path = rulesetUri === undefined || isAbsolute(source) ? source : join(rulesetUri, '..', source);
+  const path = isAbsolute(source) ? source : join(rulesetUri, '..', source);
 
   return pathNormalize(path) + (pointer ?? '');
 };
@@ -56,7 +56,7 @@ const buildErrorMessagePrefix = ($ref: string, rulesetUri?: string): string => {
   return prefix + `\`except\` entry (key \`${$ref}\`) is malformed. `;
 };
 
-const buildInvalidUriErrorMessage = ($ref: string, rulesetUri?: string, precision?: string): string => {
+const buildInvalidUriErrorMessage = ($ref: string, rulesetUri: string, precision?: string): string => {
   return (
     buildErrorMessagePrefix($ref, rulesetUri) +
     `Key \`${$ref}\` is not a valid uri${precision !== void 0 ? ` (${precision})` : ''}.`
@@ -64,13 +64,13 @@ const buildInvalidUriErrorMessage = ($ref: string, rulesetUri?: string, precisio
 };
 
 export function mergeExceptions(
-  target: RulesetExceptionCollection,
-  source: RulesetExceptionCollection,
-  baseUri?: string,
+  inheritedExceptions: RulesetExceptionCollection,
+  exceptions: RulesetExceptionCollection,
+  baseUri: string,
 ): void {
-  for (const [location, sourceRules] of Object.entries(source)) {
+  for (const [location, sourceRules] of Object.entries(exceptions)) {
     const normalizedLocation = normalize(location, baseUri);
-    const targetRules = normalizedLocation in target ? target[normalizedLocation] : [];
+    const targetRules = normalizedLocation in inheritedExceptions ? inheritedExceptions[normalizedLocation] : [];
 
     const set = new Set(targetRules);
 
@@ -86,6 +86,6 @@ export function mergeExceptions(
       set.add(rule);
     }
 
-    target[normalizedLocation] = [...set].sort((a, b) => a.localeCompare(b));
+    inheritedExceptions[normalizedLocation] = [...set].sort((a, b) => a.localeCompare(b));
   }
 }

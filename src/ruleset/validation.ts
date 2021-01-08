@@ -1,11 +1,10 @@
 import * as AJV from 'ajv';
 import { isObject } from 'lodash';
 
-import { FileRule, IRulesetFile } from '../types/ruleset';
 import * as ruleSchema from '../meta/rule.schema.json';
 import * as rulesetSchema from '../meta/ruleset.schema.json';
 import * as shared from '../meta/shared.json';
-import { IFunction, IFunctionPaths, IFunctionValues, IRule, JSONSchema } from '../types';
+import { RulesetDefinition, FileRule } from './types';
 
 const ajv = new AJV({ allErrors: true, jsonPointers: true });
 const validate = ajv.addSchema(ruleSchema).addSchema(shared).compile(rulesetSchema);
@@ -22,7 +21,7 @@ export class ValidationError extends AJV.ValidationError {
   }
 }
 
-export function assertValidRuleset(ruleset: unknown): IRulesetFile {
+export function assertValidRuleset(ruleset: unknown): asserts ruleset is RulesetDefinition {
   if (!isObject(ruleset)) {
     throw new Error('Provided ruleset is not an object');
   }
@@ -34,20 +33,14 @@ export function assertValidRuleset(ruleset: unknown): IRulesetFile {
   if (!validate(ruleset)) {
     throw new ValidationError(validate.errors ?? []);
   }
-
-  return ruleset as IRulesetFile;
 }
 
 export function isValidRule(rule: FileRule): rule is IRule {
   return typeof rule === 'object' && rule !== null && !Array.isArray(rule) && ('given' in rule || 'then' in rule);
 }
 
-export function decorateIFunctionWithSchemaValidation(fn: IFunction<any>, schema: JSONSchema) {
-  return (data: unknown, opts: unknown, ...args: [IFunctionPaths, IFunctionValues]) => {
-    if (!ajv.validate(schema, opts)) {
-      throw new ValidationError(ajv.errors ?? []);
-    }
-
-    return fn(data, opts, ...args);
-  };
+export function assertValidRule(rule: FileRule): asserts rule is IRule {
+  if (!isValidRule(rule)) {
+    throw new TypeError('Invalid rule');
+  }
 }

@@ -1,5 +1,6 @@
 {
   "include": ["src"],
+  "exclude": ["src/**/__**__"],
   "compilerOptions": {
     "moduleResolution": "node",
     "target": "es2017",

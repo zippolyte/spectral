@@ -2,41 +2,29 @@ import { stringify } from '@stoplight/json';
 import { Resolver } from '@stoplight/json-ref-resolver';
 import { DiagnosticSeverity, Dictionary, Optional } from '@stoplight/types';
 import { YamlParserResult } from '@stoplight/yaml';
-import { memoize, merge } from 'lodash';
+import { memoize } from 'lodash';
 import type { Agent } from 'http';
 
 import { STATIC_ASSETS } from './assets';
 import { Document, IDocument, IParsedResult, isParsedResult, ParsedDocument, normalizeSource } from './document';
 import { DocumentInventory } from './documentInventory';
-import { CoreFunctions, functions as coreFunctions } from './functions';
 import * as Parsers from './parsers';
 import request from './request';
 import { createHttpAndFileResolver } from './resolvers/http-and-file';
-import { OptimizedRule, Rule } from './rule';
-import { readRuleset } from './rulesets';
-import { compileExportedFunction, setFunctionContext } from './rulesets/evaluators';
-import { mergeExceptions } from './rulesets/mergers/exceptions';
-import { IRulesetReadOptions } from './rulesets/reader';
 import { Runner, RunnerRuntime } from './runner';
 import {
   FormatLookup,
-  FunctionCollection,
   IConstructorOpts,
-  IFunctionContext,
   IResolver,
   IRuleResult,
   IRunOpts,
   ISpectralFullResult,
-  PartialRuleCollection,
   RegisteredFormats,
-  RuleCollection,
-  RunRuleCollection,
 } from './types';
-import { IParserOptions, IRuleset, RulesetExceptionCollection } from './types/ruleset';
 import { ComputeFingerprintFunc, defaultComputeResultFingerprint, empty, isNimmaEnvVariableSet } from './utils';
 import { generateDocumentWideResult } from './utils/generateDocumentWideResult';
-import { getDiagnosticSeverity } from './rulesets/severity';
-import { DEFAULT_PARSER_OPTIONS } from './consts';
+import { Ruleset } from './ruleset/ruleset';
+import { IRulesetReadOptions } from './ruleset/types';
 
 memoize.Cache = WeakMap;
 
@@ -46,11 +34,8 @@ export class Spectral {
   private readonly _resolver: IResolver;
   private readonly agent: Agent | undefined;
 
-  public readonly functions: FunctionCollection & CoreFunctions = { ...coreFunctions };
-  public readonly rules: RunRuleCollection = {};
-  public readonly exceptions: RulesetExceptionCollection = {};
+  public ruleset?: Ruleset;
   public readonly formats: RegisteredFormats;
-  public readonly parserOptions: Required<IParserOptions> = { ...DEFAULT_PARSER_OPTIONS };
 
   protected readonly runtime: RunnerRuntime;
 
@@ -64,6 +49,7 @@ export class Spectral {
       const ProxyAgent = eval('require')('proxy-agent');
       this.agent = new ProxyAgent(opts.proxyUri);
     }
+
     if (opts?.resolver !== void 0) {
       this._resolver = opts.resolver;
     } else {
@@ -73,8 +59,6 @@ export class Spectral {
 
     this.formats = {};
     this.runtime = new RunnerRuntime();
-
-    this.setFunctions(coreFunctions);
   }
 
   public static registerStaticAssets(assets: Dictionary<string, string>): void {
@@ -103,9 +87,9 @@ export class Spectral {
       if (diagnostic.code !== 'parser') continue;
 
       if (diagnostic.message.startsWith('Mapping key must be a string scalar rather than')) {
-        diagnostic.severity = getDiagnosticSeverity(this.parserOptions.incompatibleValues);
+        diagnostic.severity = this.ruleset.parserOptions.incompatibleValues;
       } else if (diagnostic.message.startsWith('Duplicate key')) {
-        diagnostic.severity = getDiagnosticSeverity(this.parserOptions.duplicateKeys);
+        diagnostic.severity = this.ruleset.parserOptions.duplicateKeys;
       }
 
       if (diagnostic.severity === -1) {
@@ -135,7 +119,7 @@ export class Spectral {
     if (document.formats === void 0) {
       const registeredFormats = Object.keys(this.formats);
       const foundFormats = registeredFormats.filter(format =>
-        this.formats[format](inventory.resolved, document.source ?? void 0),
+        this.formats[format](inventory.resolved, document.source),
       );
       if (foundFormats.length === 0 && opts.ignoreUnknownFormat !== true) {
         document.formats = null;
@@ -147,11 +131,7 @@ export class Spectral {
       }
     }
 
-    await runner.run({
-      rules: this.rules,
-      functions: this.functions,
-      exceptions: this.exceptions,
-    });
+    await runner.run(this.ruleset);
 
     const results = runner.getResults(this._computeFingerprint);
 
@@ -165,96 +145,32 @@ export class Spectral {
     return (await this.runWithResolved(target, opts)).results;
   }
 
-  public setFunctions(functions: FunctionCollection): void {
-    empty(this.functions);
-
-    const mergedFunctions = { ...coreFunctions, ...functions };
-
-    for (const key of Object.keys(mergedFunctions)) {
-      const context: IFunctionContext = {
-        functions: this.functions,
-        cache: new Map(),
-      };
-
-      this.functions[key] = setFunctionContext(context, mergedFunctions[key]);
-    }
+  public async loadRuleset(uri: string, readOpts?: IRulesetReadOptions): Promise<void> {
+    const ruleset = new Ruleset(uri, { readOpts, severity: 'recommended' });
+    await ruleset.load();
+    this.setRuleset(ruleset);
   }
 
-  public setRules(rules: RuleCollection): void {
-    empty(this.rules);
-
-    for (const [name, rule] of Object.entries(rules)) {
-      if (this.opts?.useNimma === true || isNimmaEnvVariableSet()) {
-        try {
-          this.rules[name] = new OptimizedRule(name, rule);
-        } catch {
-          this.rules[name] = new Rule(name, rule);
-        }
-      } else {
-        this.rules[name] = new Rule(name, rule);
-      }
-    }
-  }
-
-  public mergeRules(rules: PartialRuleCollection): void {
-    for (const [name, rule] of Object.entries(rules)) {
-      this.rules[name] = merge(this.rules[name], rule);
-    }
-  }
-
-  private setExceptions(exceptions: RulesetExceptionCollection): void {
-    const target: RulesetExceptionCollection = {};
-    mergeExceptions(target, exceptions);
-
-    empty(this.exceptions);
-
-    Object.assign(this.exceptions, target);
-  }
-
-  public async loadRuleset(uris: string[] | string, options?: IRulesetReadOptions): Promise<void> {
-    this.setRuleset(await readRuleset(Array.isArray(uris) ? uris : [uris], { agent: this.agent, ...options }));
-  }
-
-  public setRuleset(ruleset: IRuleset): void {
+  public setRuleset(ruleset: Ruleset): void {
     this.runtime.revoke();
 
-    this.setRules(ruleset.rules);
+    this.ruleset = ruleset;
 
-    this.setFunctions(
-      Object.entries(ruleset.functions).reduce<FunctionCollection>(
-        (fns, [key, { code, ref, name, source, schema }]) => {
-          if (code === void 0) {
-            if (ref !== void 0) {
-              ({ code } = ruleset.functions[ref]);
-            }
-          }
+    if (this.opts?.useNimma === true || isNimmaEnvVariableSet()) {
+      for (const rule of Object.values(ruleset.rules)) {
+        rule.optimize();
+      }
+    }
 
-          if (code === void 0) {
-            // shall we log or sth?
-            return fns;
-          }
-
-          fns[key] = compileExportedFunction({
-            code,
-            name,
-            source,
-            schema,
-            inject: {
-              fetch: request,
-              spectral: this.runtime.spawn(),
-            },
-          });
-
-          return fns;
-        },
-        {},
-      ),
-    );
-
-    this.setExceptions(ruleset.exceptions);
-
-    if (ruleset.parserOptions !== void 0) {
-      Object.assign<Required<IParserOptions>, IParserOptions>(this.parserOptions, ruleset.parserOptions);
+    if (ruleset.functions !== null) {
+      for (const fn of Object.values(ruleset.functions)) {
+        fn.compile({
+          inject: {
+            fetch: request,
+            spectral: this.runtime.spawn(),
+          },
+        });
+      }
     }
   }
 

@@ -17,8 +17,8 @@ export async function lint(documents: Array<number | string>, flags: ILintConfig
   spectral.setRuleset(ruleset);
 
   for (const [format, lookup, prettyName] of KNOWN_FORMATS) {
-    spectral.registerFormat(format, document => {
-      if (lookup(document)) {
+    spectral.registerFormat(format, (document, uri) => {
+      if (lookup(document, uri)) {
         if (flags.quiet !== true) {
           console.log(`${prettyName} detected`);
         }

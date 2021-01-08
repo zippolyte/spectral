@@ -3,11 +3,11 @@ import { pick } from 'lodash';
 import { ReadStream } from 'tty';
 import { CommandModule, showHelp } from 'yargs';
 
-import { getDiagnosticSeverity } from '../../rulesets/severity';
 import { IRuleResult } from '../../types';
 import { FailSeverity, ILintConfig, OutputFormat } from '../../types/config';
 import { lint } from '../services/linter';
 import { formatOutput, writeOutput } from '../services/output';
+import { getDiagnosticSeverity } from '../../ruleset/utils/severity';
 
 const toArray = (args: unknown): unknown[] => (Array.isArray(args) ? args : [args]);
 

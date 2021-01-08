@@ -64,6 +64,7 @@
     "test": "jest --silent"
   },
   "dependencies": {
+    "@sindresorhus/fnv1a": "^2.0.1",
     "@stoplight/better-ajv-errors": "0.0.3",
     "@stoplight/json": "3.9.0",
     "@stoplight/json-ref-readers": "1.2.1",
@@ -82,7 +83,6 @@
     "fast-glob": "3.2.4",
     "jsonpath-plus": "4.0.0",
     "lodash": "4.17.19",
-    "nanoid": "2.1.11",
     "nimma": "0.0.0",
     "node-fetch": "2.6",
     "proxy-agent": "3.1.1",

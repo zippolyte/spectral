@@ -1,14 +1,9 @@
-import { DocumentInventory } from '../documentInventory';
-import { FunctionCollection, IRuleResult, RunRuleCollection } from '../types';
-import { RulesetExceptionCollection } from '../types/ruleset';
+import type { DocumentInventory } from '../documentInventory';
+import type { IRuleResult } from '../types';
+import type { Ruleset } from '../ruleset/ruleset';
 
-export interface IRunnerPublicContext {
-  rules: RunRuleCollection;
-  functions: FunctionCollection;
-  exceptions: RulesetExceptionCollection;
-}
-
-export interface IRunnerInternalContext extends IRunnerPublicContext {
+export interface IRunnerInternalContext {
+  ruleset: Ruleset;
   documentInventory: DocumentInventory;
   results: IRuleResult[];
   promises: Array<Promise<void>>;

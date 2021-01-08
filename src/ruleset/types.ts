@@ -1,7 +1,9 @@
 import { Dictionary } from '@stoplight/types';
 import { DiagnosticSeverity } from '@stoplight/types';
-import { HumanReadableDiagnosticSeverity, IRule } from './rule';
-import { JSONSchema, RuleCollection } from './spectral';
+import { IHttpAndFileResolverOptions } from '../resolvers/http-and-file';
+import { HumanReadableDiagnosticSeverity, IRule } from '../types/rule';
+import { JSONSchema } from '../types/spectral';
+import { CustomFunction } from './customFunction/customFunction';
 
 export type FileRuleSeverity = DiagnosticSeverity | HumanReadableDiagnosticSeverity | boolean;
 export type FileRulesetSeverity = 'off' | 'recommended' | 'all';
@@ -10,15 +12,7 @@ export type FileRule = IRule | FileRuleSeverity | [FileRuleSeverity] | [FileRule
 
 export type FileRuleCollection = Dictionary<FileRule, string>;
 
-export interface IRulesetFunctionDefinition {
-  code?: string;
-  ref?: string;
-  schema: JSONSchema | null;
-  name: string;
-  source: string | null;
-}
-
-export type RulesetFunctionCollection = Dictionary<IRulesetFunctionDefinition, string>;
+export type RulesetFunctionCollection = Dictionary<CustomFunction, string>;
 export type RulesetExceptionCollection = Dictionary<string[], string>;
 
 export interface IParserOptions {
@@ -26,20 +20,22 @@ export interface IParserOptions {
   incompatibleValues?: DiagnosticSeverity | HumanReadableDiagnosticSeverity;
 }
 
-export interface IRuleset {
-  rules: RuleCollection;
-  functions: RulesetFunctionCollection;
-  exceptions: RulesetExceptionCollection;
-  parserOptions?: IParserOptions;
-}
-
-export interface IRulesetFile {
+export type RulesetDefinition = {
   documentationUrl?: string;
-  extends?: Array<string | [string, FileRulesetSeverity]>;
   formats?: string[];
-  rules?: FileRuleCollection;
   functionsDir?: string;
   functions?: Array<string | [string, JSONSchema]>;
   except?: RulesetExceptionCollection;
   parserOptions?: IParserOptions;
+} & {
+  extends: Array<string | [string, FileRulesetSeverity]>;
+} & {
+  rules: FileRuleCollection; // todo: make it IRule once validation is in place
+} & {
+  extends: Array<string | [string, FileRulesetSeverity]>;
+  rules: FileRuleCollection;
+};
+
+export interface IRulesetReadOptions extends IHttpAndFileResolverOptions {
+  timeout?: number;
 }
