@@ -6,9 +6,9 @@ import * as path from 'path';
 import * as timers from 'timers';
 
 import { httpAndFileResolver } from '../resolvers/http-and-file';
-import { readRuleset } from '../rulesets';
 import { IFunctionResult, Spectral } from '../spectral';
 import { IRuleset, RulesetExceptionCollection } from '../types/ruleset';
+import { readRuleset } from '../ruleset';
 
 const functionRuleset = path.join(__dirname, './__fixtures__/rulesets/custom-functions.json');
 const exceptionRuleset = path.join(__dirname, './__fixtures__/rulesets/exceptions.json');

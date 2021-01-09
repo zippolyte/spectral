@@ -1,9 +1,9 @@
 import { isAbsolute, resolve } from '@stoplight/path';
 import { Optional } from '@stoplight/types';
-import { readRuleset } from '../../../../rulesets';
-import { getDefaultRulesetFile } from '../../../../rulesets/loader';
 import { IRuleset } from '../../../../types/ruleset';
 import { KNOWN_RULESETS } from '../../../../formats';
+import { readRuleset } from '../../../../ruleset';
+import { getDefaultRulesetFile } from '../../../../ruleset/utils/getDefaultRulesetFile';
 
 async function loadRulesets(cwd: string, rulesetFiles: string[]): Promise<IRuleset> {
   if (rulesetFiles.length === 0) {

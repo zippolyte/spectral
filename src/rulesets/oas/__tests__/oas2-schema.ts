@@ -1,9 +1,9 @@
 import { functions } from '../../../functions';
 import { RuleType, Spectral } from '../../../spectral';
-import { setFunctionContext } from '../../evaluators';
 import oasDocumentSchema from '../functions/oasDocumentSchema';
 import * as ruleset from '../index.json';
 import * as oas2Schema from '../schemas/schema.oas2.json';
+import { setFunctionContext } from '../../../ruleset';
 
 describe('oas2-schema', () => {
   let s: Spectral;

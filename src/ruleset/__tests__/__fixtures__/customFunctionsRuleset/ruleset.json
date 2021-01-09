@@ -1,0 +1,21 @@
+{
+  "functionsDir": "./customFunctions",
+  "functions": [
+    "bar",
+    "truthy"
+  ],
+  "rules": {
+    "bar-rule": {
+      "given": "$.info",
+      "then": {
+        "function": "bar"
+      }
+    },
+    "truthy-rule": {
+      "given": "$.x",
+      "then": {
+        "function": "truthy"
+      }
+    }
+  }
+}

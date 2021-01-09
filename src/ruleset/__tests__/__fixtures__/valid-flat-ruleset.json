@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "valid-rule": {
+      "given": "$.info",
+      "then": {
+        "function": "truthy"
+      }
+    }
+  }
+}

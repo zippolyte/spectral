@@ -3,12 +3,11 @@ import { get } from 'lodash';
 
 import { Document } from '../document';
 import { Rule } from '../rule';
-import { IMessageVars, message } from '../rulesets/message';
-import { getDiagnosticSeverity } from '../rulesets/severity';
+import { getDiagnosticSeverity } from '../ruleset/severity';
 import { IFunctionResult, IFunctionValues, IGivenNode } from '../types';
 import { decodeSegmentFragment, getClosestJsonPath, printPath, PrintStyle } from '../utils';
 import { IRunnerInternalContext } from './types';
-import { getLintTargets, ExceptionLocation, isAKnownException } from './utils';
+import { getLintTargets, ExceptionLocation, isAKnownException, IMessageVars, message } from './utils';
 
 export const lintNode = (
   context: IRunnerInternalContext,
@@ -129,7 +128,6 @@ function processTargetResults(
 
     context.results.push({
       code: rule.name,
-      // todo: rule.isInterpolable
       message: (rule.message === null ? rule.description ?? resultMessage : message(rule.message, vars)).trim(),
       path,
       severity: getDiagnosticSeverity(rule.severity),

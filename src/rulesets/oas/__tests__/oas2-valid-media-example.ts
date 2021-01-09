@@ -1,9 +1,9 @@
 import { DiagnosticSeverity } from '@stoplight/types';
 import { RuleType, Spectral } from '../../../spectral';
 import * as ruleset from '../index.json';
-import { setFunctionContext } from '../../evaluators';
 import { functions } from '../../../functions';
 import oasExample from '../functions/oasExample';
+import { setFunctionContext } from '../../../ruleset';
 
 describe('oas2-valid-media-example', () => {
   let s: Spectral;

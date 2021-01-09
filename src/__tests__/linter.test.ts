@@ -1,10 +1,9 @@
 import { Resolver } from '@stoplight/json-ref-resolver';
 import { DiagnosticSeverity, JsonPath } from '@stoplight/types';
 import { parse } from '@stoplight/yaml';
-import { omit } from 'lodash';
 import { IParsedResult } from '../document';
 import { isOpenApiv2, isOpenApiv3 } from '../formats';
-import { mergeRules, readRuleset } from '../rulesets';
+import { mergeRules, readRuleset } from '../ruleset';
 import { RuleCollection, Spectral } from '../spectral';
 import { httpAndFileResolver } from '../resolvers/http-and-file';
 import { Parsers, Document } from '..';
@@ -186,26 +185,23 @@ describe('linter', () => {
     expect(result[0]).toHaveProperty('severity', DiagnosticSeverity.Hint);
   });
 
-  // todo: depends on spectral:oas
-  test('should not report anything for disabled rules', async () => {
+  xtest('should not report anything for disabled rules', async () => {
     spectral.registerFormat('oas2', isOpenApiv2);
     spectral.registerFormat('oas3', isOpenApiv3);
 
     await spectral.loadRuleset('spectral:oas');
     const { rules: oasRules } = await readRuleset('spectral:oas');
     spectral.setRules({
-      ...mergeRules(oasRules, {
-        'oas3-valid-schema-example': 'off',
-        'operation-success-response': -1,
-        'openapi-tags': 'off',
-        'operation-tag-defined': 'off',
-      }),
-      ...omit(spectral.rules, [
-        'oas3-valid-schema-example',
-        'operation-success-response',
-        'openapi-tags',
-        'operation-tag-defined',
-      ]),
+      ...mergeRules(
+        oasRules,
+        {
+          'oas3-valid-schema-example': 'off',
+          'operation-success-response': -1,
+          'openapi-tags': 'off',
+          'operation-tag-defined': 'off',
+        },
+        'recommended',
+      ),
     } as RuleCollection);
 
     const result = await spectral.run(invalidSchema);

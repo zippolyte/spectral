@@ -1,9 +1,9 @@
 import { DiagnosticSeverity } from '@stoplight/types';
 import { functions } from '../../../functions';
 import { KNOWN_FORMATS, RuleType, Spectral } from '../../../index';
-import { setFunctionContext } from '../../evaluators';
 import { typedEnum } from '../functions/typedEnum';
 import { rules } from '../index.json';
+import { setFunctionContext } from '../../../ruleset';
 
 describe('typed-enum', () => {
   const s = new Spectral();

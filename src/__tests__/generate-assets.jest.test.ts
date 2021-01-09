@@ -1,10 +1,10 @@
 import { existsSync, readFileSync } from 'fs';
 import { Spectral } from '../spectral';
-import { setFunctionContext } from '../rulesets/evaluators';
 import { functions } from '../functions';
 import oasDocumentSchema from '../rulesets/oas/functions/oasDocumentSchema';
 import { KNOWN_FORMATS } from '../formats';
-import { DiagnosticSeverity } from '@stoplight/types/dist';
+import { DiagnosticSeverity } from '@stoplight/types';
+import { setFunctionContext } from '../ruleset';
 
 describe('generate-assets', () => {
   let assets: Record<string, string>;
