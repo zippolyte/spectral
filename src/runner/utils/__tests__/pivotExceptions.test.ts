@@ -1,7 +1,6 @@
 import { DiagnosticSeverity, Dictionary } from '@stoplight/types';
 import { ExceptionLocation, pivotExceptions } from '../pivotExceptions';
 
-import { buildRulesetExceptionCollectionFrom } from '../../../../setupTests';
 import { Rule } from '../../../rule';
 import { InvalidUriError } from '../../../ruleset/mergers/exceptions';
 
@@ -56,7 +55,7 @@ describe('pivotExceptions', () => {
   });
 
   it.each([['']])('throws upon detected malformed location (%s)', malformed => {
-    const bad = buildRulesetExceptionCollectionFrom(malformed);
+    const bad = { [malformed]: ['a'] };
 
     expect(() => {
       pivotExceptions(bad, {});

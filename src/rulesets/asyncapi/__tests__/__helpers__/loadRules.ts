@@ -1,14 +1,14 @@
 import { STATIC_ASSETS } from '../../../../assets';
 import { empty } from '../../../../utils';
 import { Spectral } from '../../../../spectral';
-import { isOpenApiv2, isOpenApiv3 } from '../../../../formats';
+import { isAsyncApiv2 } from '../../../../formats';
 import * as ruleset from '../../index.json';
 
 export async function loadRules(rules: (keyof typeof ruleset['rules'])[]): Promise<Spectral> {
   try {
-    Object.assign(STATIC_ASSETS, await import('../../../../../rulesets/assets/assets.oas.json'), {
+    Object.assign(STATIC_ASSETS, await import('../../../../../rulesets/assets/assets.asyncapi.json'), {
       'my-ruleset': JSON.stringify({
-        extends: [['spectral:oas', 'off']],
+        extends: [['spectral:asyncapi', 'off']],
         rules: rules.reduce((obj, name) => {
           obj[name] = true;
           return obj;
@@ -17,8 +17,7 @@ export async function loadRules(rules: (keyof typeof ruleset['rules'])[]): Promi
     });
 
     const s = new Spectral();
-    s.registerFormat('oas2', isOpenApiv2);
-    s.registerFormat('oas3', isOpenApiv3);
+    s.registerFormat('asyncapi2', isAsyncApiv2);
 
     await s.loadRuleset('my-ruleset');
 
