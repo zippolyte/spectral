@@ -53,7 +53,7 @@ describe('Ruleset Validation', () => {
     expect(
       assertValidRuleset.bind(null, {
         documentationUrl: 'https://stoplight.io/p/docs/gh/stoplightio/spectral/docs/reference/openapi-rules.md',
-        extends: ['spectral:oas'],
+        rules: {},
       }),
     ).not.toThrow();
 

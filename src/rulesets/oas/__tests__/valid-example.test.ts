@@ -1,9 +1,9 @@
 import { DiagnosticSeverity } from '@stoplight/types';
 import { RuleType, Spectral } from '../../../spectral';
-import { setFunctionContext } from '../../evaluators';
 import { functions } from '../../../functions';
 import oasExample from '../functions/oasExample';
 import * as ruleset from '../index.json';
+import { setFunctionContext } from '../../../ruleset';
 
 describe.each(['oas2', 'oas3'])('%s', spec => {
   let s: Spectral;
